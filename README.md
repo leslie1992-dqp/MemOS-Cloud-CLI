@@ -1,0 +1,156 @@
+# MemOS CLI
+
+Universal memory interface for AI agents.
+
+## Project Structure
+
+```
+MemOS-CLI/
+├── src/memos_cli/
+│   ├── __init__.py          # Package version
+│   ├── __main__.py          # python -m memos_cli entry
+│   ├── main.py              # Main CLI app (Typer)
+│   ├── config.py            # Configuration management
+│   ├── output.py            # Output formatting (text/json)
+│   ├── branding.py          # Brand colors and symbols
+│   ├── state.py             # State management (agent mode)
+│   ├── telemetry.py         # Telemetry reporting
+│   ├── backend/             # API backend layer
+│   │   ├── base.py          # Abstract base class
+│   │   └── memos_api.py     # MemOS Cloud API implementation
+│   └── commands/            # CLI commands
+│       ├── init.py          # memos init
+│       ├── config_cmd.py    # memos config (show/get/set)
+│       └── memory.py        # add/search/list/get/delete
+├── skills/
+│   ├── memos-shared/        # Shared config and runtime rules
+│   ├── memos-memory/        # Memory domain skill (P0 commands)
+│   ├── memos-memory-agent/  # Automated recall/capture workflow
+│   └── memory_skill.md      # Backward-compatible pointer
+├── pyproject.toml
+└── README.md
+```
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Quick Start
+
+### 1. Initialize
+
+```bash
+memos init
+```
+
+Or with arguments:
+
+```bash
+memos init --api-key YOUR_API_KEY --base-url https://memos.memtensor.cn/api/openmem/v1
+```
+
+### 2. Add Memory
+
+```bash
+memos add -m "User likes Python programming"
+```
+
+### 3. Search Memories
+
+```bash
+memos search -q "programming languages"
+```
+
+### 4. List Memories
+
+```bash
+memos list
+```
+
+### 5. Get Memory by ID
+
+```bash
+memos get mem_123456
+```
+
+### 6. Delete Memory
+
+```bash
+memos delete mem_123456
+```
+
+## JSON Output Mode
+
+For agent integration, use `--json` flag:
+
+```bash
+memos search --json -q "python"
+memos add --json -m "User prefers TypeScript"
+```
+
+## Global Options
+
+- `--json`: Output as JSON for programmatic use
+- `--api-key KEY`: Override API key from config
+- `--base-url URL`: Override base URL from config
+- `--version`: Show version
+
+## Configuration
+
+View current config:
+
+```bash
+memos config show
+```
+
+Get/Set specific values:
+
+```bash
+memos config get platform.api_key
+memos config set defaults.user_id user123
+```
+
+## Environment Variables
+
+- `MEMOS_API_KEY`: Your API key
+- `MEMOS_BASE_URL`: API base URL (default: https://memos.memtensor.cn/api/openmem/v1)
+
+## Agent Integration
+
+Use the provided skills to enable automatic memory management in your agent framework.
+
+Recommended entry points:
+1. `skills/memos-shared/SKILL.md` for init, config, and runtime conventions
+2. `skills/memos-memory/SKILL.md` for P0 memory commands
+3. `skills/memos-memory-agent/SKILL.md` for recall-before-respond / store-after-respond workflows
+
+## Telemetry & Source Tracking
+
+All CLI requests include:
+- `source=cli` header
+- Framework detection (OpenClaw, Hermes, etc.)
+
+Memory API requests also attach framework metadata when it can be detected from
+environment variables or the parent process.
+
+This enables usage analytics and framework-specific optimizations.
+
+## Development
+
+### Run from source
+
+```bash
+python -m memos_cli --help
+```
+
+### Add new commands
+
+1. Create command file in `src/memos_cli/commands/`
+2. Register in `src/memos_cli/main.py`
+3. Add to appropriate help panel
+
+## License
+
+MIT

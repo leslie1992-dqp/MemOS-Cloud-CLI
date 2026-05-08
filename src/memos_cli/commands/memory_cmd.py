@@ -1,0 +1,258 @@
+"""Execution layer for memory commands."""
+from __future__ import annotations
+
+import sys
+import time
+from typing import Any
+
+import typer
+from rich.console import Console
+
+from memos_cli.backend.memos_api import APIError, AuthError, get_backend
+from memos_cli.config import DEFAULT_CONVERSATION_ID, DEFAULT_USER_ID, load_config
+from memos_cli.output import (
+    format_add_result,
+    format_agent_envelope,
+    format_memories_text,
+    format_single_memory,
+)
+from memos_cli.state import apply_runtime_overrides, is_agent_mode
+
+console = Console()
+
+
+def _load_backend():
+    config = apply_runtime_overrides(load_config())
+    return config, get_backend(config)
+
+
+def resolve_scope(
+    *,
+    config,
+    user_id: str | None,
+    agent_id: str | None,
+    app_id: str | None,
+    run_id: str | None,
+) -> dict[str, str | None]:
+    """Resolve scope IDs from CLI flags or configured defaults."""
+    return {
+        "user_id": user_id or config.defaults.user_id or DEFAULT_USER_ID,
+        "agent_id": agent_id or config.defaults.agent_id,
+        "app_id": app_id or config.defaults.app_id,
+        "run_id": run_id or config.defaults.run_id,
+    }
+
+
+def _handle_error(exc: Exception) -> None:
+    if isinstance(exc, AuthError):
+        console.print(f"[red]Authentication failed:[/] {exc}")
+    elif isinstance(exc, APIError):
+        console.print(f"[red]API error:[/] {exc}")
+    else:
+        console.print(f"[red]Error:[/] {exc}")
+    raise typer.Exit(1)
+
+
+def read_add_content(text: str | None, message: str | None) -> str:
+    """Resolve add content from argument, option, or stdin."""
+    content = text or message
+    if not content and not sys.stdin.isatty():
+        content = sys.stdin.read().strip()
+    if not content:
+        console.print("[red]Error:[/] No text provided")
+        raise typer.Exit(1)
+    return content
+
+
+def resolve_search_query(query: str | None, query_option: str | None) -> str:
+    """Resolve search query from argument or option."""
+    final_query = query_option or query
+    if not final_query:
+        console.print("[red]Error:[/] No query provided")
+        raise typer.Exit(1)
+    return final_query
+
+
+def cmd_add(
+    text: str | None,
+    *,
+    message: str | None,
+    user_id: str | None,
+    agent_id: str | None,
+    app_id: str | None,
+    run_id: str | None,
+    conversation_id: str | None,
+    json_output: bool,
+) -> None:
+    """Execute add."""
+    start_time = time.time()
+    content = read_add_content(text, message)
+
+    try:
+        config, backend = _load_backend()
+        scope = resolve_scope(
+            config=config,
+            user_id=user_id,
+            agent_id=agent_id,
+            app_id=app_id,
+            run_id=run_id,
+        )
+        final_conversation_id = (
+            conversation_id
+            or config.defaults.conversation_id
+            or config.defaults.run_id
+            or DEFAULT_CONVERSATION_ID
+        )
+        result = backend.add_memory(
+            content,
+            **scope,
+            conversation_id=final_conversation_id,
+        )
+    except Exception as exc:
+        _handle_error(exc)
+
+    duration_ms = int((time.time() - start_time) * 1000)
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="add",
+            data=result,
+            duration_ms=duration_ms,
+            scope={**scope, "conversation_id": final_conversation_id},
+            count=len(result.get("results", [])),
+        )
+        return
+    format_add_result(console, result)
+
+
+def cmd_search(
+    query: str | None,
+    *,
+    query_option: str | None,
+    user_id: str | None,
+    agent_id: str | None,
+    app_id: str | None,
+    run_id: str | None,
+    conversation_id: str | None,
+    limit: int,
+    json_output: bool,
+) -> None:
+    """Execute search."""
+    start_time = time.time()
+    final_query = resolve_search_query(query, query_option)
+
+    try:
+        config, backend = _load_backend()
+        scope = resolve_scope(
+            config=config,
+            user_id=user_id,
+            agent_id=agent_id,
+            app_id=app_id,
+            run_id=run_id,
+        )
+        memories = backend.search_memories(
+            final_query,
+            **scope,
+            conversation_id=conversation_id,
+            limit=limit,
+        )
+    except Exception as exc:
+        _handle_error(exc)
+
+    duration_ms = int((time.time() - start_time) * 1000)
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="search",
+            data=memories,
+            duration_ms=duration_ms,
+            count=len(memories),
+            scope={**scope, "conversation_id": conversation_id},
+        )
+        return
+    format_memories_text(console, memories, title="memories")
+
+
+def cmd_list(
+    *,
+    user_id: str | None,
+    limit: int | None,
+    json_output: bool,
+) -> None:
+    """Execute list."""
+    start_time = time.time()
+
+    try:
+        config, backend = _load_backend()
+        final_user_id = user_id or config.defaults.user_id or DEFAULT_USER_ID
+        memories = backend.list_memories(user_id=final_user_id, limit=limit)
+    except Exception as exc:
+        _handle_error(exc)
+
+    duration_ms = int((time.time() - start_time) * 1000)
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="list",
+            data=memories,
+            duration_ms=duration_ms,
+            count=len(memories),
+            scope={"user_id": final_user_id},
+        )
+        return
+    format_memories_text(console, memories, title="memories")
+
+
+def cmd_get(
+    memory_id: str,
+    *,
+    user_id: str | None,
+    json_output: bool,
+) -> None:
+    """Execute get."""
+    try:
+        config, backend = _load_backend()
+        final_user_id = user_id or config.defaults.user_id or DEFAULT_USER_ID
+        memory = backend.get_memory(memory_id, user_id=final_user_id)
+    except Exception as exc:
+        _handle_error(exc)
+
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="get",
+            data=memory,
+            scope={"user_id": final_user_id},
+        )
+        return
+    format_single_memory(console, memory)
+
+
+def cmd_delete(
+    memory_id: str,
+    *,
+    user_id: str | None,
+    json_output: bool,
+) -> None:
+    """Execute delete."""
+    try:
+        config, backend = _load_backend()
+        final_user_id = user_id or config.defaults.user_id or DEFAULT_USER_ID
+        result = backend.delete_memory(memory_id, user_id=final_user_id)
+    except Exception as exc:
+        _handle_error(exc)
+
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="delete",
+            data=result,
+            scope={"user_id": final_user_id},
+        )
+        return
+    console.print(f"[green]✓[/] Memory deleted: {memory_id}")
+
+
+def main() -> Any:
+    """Compatibility hook for direct invocation if needed."""
+    return None
