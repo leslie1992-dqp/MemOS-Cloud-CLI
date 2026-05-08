@@ -36,6 +36,10 @@ class MemOSBackend(BackendBase):
         """List memories."""
         return self.memory_api.list_memories(**kwargs)
 
+    def chat(self, query: str, **kwargs: Any) -> dict[str, Any]:
+        """Chat with MemOS."""
+        return self.memory_api.chat(query, **kwargs)
+
     def get_memory(self, memory_id: str, **kwargs: Any) -> dict[str, Any]:
         """Get a specific memory."""
         return self.memory_api.get_memory(memory_id, **kwargs)

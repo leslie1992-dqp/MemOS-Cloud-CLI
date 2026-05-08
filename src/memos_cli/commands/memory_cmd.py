@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import time
+import json
 from typing import Any
 
 import typer
@@ -13,6 +14,7 @@ from memos_cli.config import DEFAULT_CONVERSATION_ID, DEFAULT_USER_ID, load_conf
 from memos_cli.output import (
     format_add_result,
     format_agent_envelope,
+    format_chat_result,
     format_memories_text,
     format_single_memory,
 )
@@ -71,6 +73,26 @@ def resolve_search_query(query: str | None, query_option: str | None) -> str:
         console.print("[red]Error:[/] No query provided")
         raise typer.Exit(1)
     return final_query
+
+
+def resolve_chat_query(query: str | None, query_option: str | None) -> str:
+    """Resolve chat query from argument or option."""
+    final_query = query_option or query
+    if not final_query:
+        console.print("[red]Error:[/] No query provided")
+        raise typer.Exit(1)
+    return final_query
+
+
+def parse_json_option(raw: str | None, *, option_name: str) -> Any | None:
+    """Parse a JSON-encoded CLI option when provided."""
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]Error:[/] Invalid JSON for {option_name}: {exc}")
+        raise typer.Exit(1)
 
 
 def cmd_add(
@@ -201,6 +223,93 @@ def cmd_list(
         )
         return
     format_memories_text(console, memories, title="memories")
+
+
+def cmd_chat(
+    query: str | None,
+    *,
+    query_option: str | None,
+    user_id: str | None,
+    agent_id: str | None,
+    app_id: str | None,
+    run_id: str | None,
+    conversation_id: str | None,
+    mode: str | None,
+    top_k: int | None,
+    pref_top_k: int | None,
+    model_name_or_path: str | None,
+    system_prompt: str | None,
+    max_tokens: int | None,
+    temperature: float | None,
+    top_p: float | None,
+    mem_cube_id: str | None,
+    readable_cube_ids: str | None,
+    writable_cube_ids: str | None,
+    history: str | None,
+    filter_json: str | None,
+    threshold: float | None,
+    moscube: bool | None,
+    include_preference: bool | None,
+    add_message_on_answer: bool | None,
+    internet_search: bool | None,
+    json_output: bool,
+) -> None:
+    """Execute chat."""
+    start_time = time.time()
+    final_query = resolve_chat_query(query, query_option)
+
+    try:
+        config, backend = _load_backend()
+        scope = resolve_scope(
+            config=config,
+            user_id=user_id,
+            agent_id=agent_id,
+            app_id=app_id,
+            run_id=run_id,
+        )
+        final_conversation_id = (
+            conversation_id
+            or config.defaults.conversation_id
+            or config.defaults.run_id
+            or DEFAULT_CONVERSATION_ID
+        )
+        result = backend.chat(
+            final_query,
+            **scope,
+            conversation_id=final_conversation_id,
+            mode=mode,
+            top_k=top_k,
+            pref_top_k=pref_top_k,
+            model_name_or_path=model_name_or_path,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            mem_cube_id=mem_cube_id,
+            readable_cube_ids=parse_json_option(readable_cube_ids, option_name="--readable-cube-ids"),
+            writable_cube_ids=parse_json_option(writable_cube_ids, option_name="--writable-cube-ids"),
+            history=parse_json_option(history, option_name="--history"),
+            filter=parse_json_option(filter_json, option_name="--filter"),
+            threshold=threshold,
+            moscube=moscube,
+            include_preference=include_preference,
+            add_message_on_answer=add_message_on_answer,
+            internet_search=internet_search,
+        )
+    except Exception as exc:
+        _handle_error(exc)
+
+    duration_ms = int((time.time() - start_time) * 1000)
+    if json_output or is_agent_mode():
+        format_agent_envelope(
+            console,
+            command="chat",
+            data=result,
+            duration_ms=duration_ms,
+            scope={**scope, "conversation_id": final_conversation_id},
+        )
+        return
+    format_chat_result(console, result)
 
 
 def cmd_get(

@@ -17,6 +17,24 @@ def normalize_add_response(data: dict, *, original_text: str) -> dict:
     return {"results": [{"memory": original_text, **data}]}
 
 
+def normalize_chat_response(data: dict | str, *, original_query: str) -> dict:
+    """Normalize chat response to a stable CLI shape."""
+    if isinstance(data, str):
+        return {"answer": data, "query": original_query}
+
+    answer = (
+        data.get("answer")
+        or data.get("response")
+        or _extract_chat_data_field(data.get("data"))
+        or _extract_choice_content(data.get("choices"))
+        or ""
+    )
+    normalized = dict(data)
+    normalized["answer"] = answer
+    normalized.setdefault("query", original_query)
+    return normalized
+
+
 def normalize_search_response(data: dict) -> list[dict]:
     """Normalize search response to a flat memory list."""
     if isinstance(data.get("results"), list):
@@ -100,3 +118,31 @@ def normalize_preference_item(item: dict) -> dict:
         normalized["id"] = item["preference_id"]
     normalized.setdefault("memory_type", item.get("preference_type", "preference"))
     return normalized
+
+
+def _extract_chat_data_field(value) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return (
+            value.get("answer")
+            or value.get("response")
+            or value.get("content")
+            or value.get("text")
+            or ""
+        )
+    return ""
+
+
+def _extract_choice_content(choices) -> str:
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first = choices[0]
+    if not isinstance(first, dict):
+        return ""
+    message = first.get("message")
+    if isinstance(message, dict) and isinstance(message.get("content"), str):
+        return message["content"]
+    if isinstance(first.get("text"), str):
+        return first["text"]
+    return ""

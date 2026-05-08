@@ -7,7 +7,7 @@ from rich.console import Console
 from memos_cli import __version__
 from memos_cli.commands.init import init_cmd
 from memos_cli.commands.config_cmd import config_app
-from memos_cli.commands.memory import add, search, list, get, delete
+from memos_cli.commands.memory import add, search, list, chat, get, delete
 from memos_cli.state import set_runtime_options
 
 console = Console()
@@ -84,9 +84,9 @@ app.command(rich_help_panel="Memory Operations")(list)
 app.command(rich_help_panel="Memory Operations")(get)
 app.command(rich_help_panel="Memory Operations")(delete)
 
-# Advanced commands (P1) - uncomment when implemented
+# Advanced commands (P1)
+app.command(rich_help_panel="Advanced")(chat)
 # app.command(rich_help_panel="Advanced")(kb_cmd)
-# app.command(rich_help_panel="Advanced")(chat_cmd)
 
 
 if __name__ == "__main__":

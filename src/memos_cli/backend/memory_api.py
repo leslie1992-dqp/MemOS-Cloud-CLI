@@ -6,6 +6,7 @@ from typing import Any
 from memos_cli.backend.normalizers import (
     extract_memory_list,
     normalize_add_response,
+    normalize_chat_response,
     normalize_delete_response,
     normalize_search_response,
     normalize_single_memory_response,
@@ -170,6 +171,78 @@ class MemoryAPI:
         if last_error is not None:
             raise last_error
         raise APIError("Failed to list memories")
+
+    def chat(self, query: str, **kwargs: Any) -> dict[str, Any]:
+        """Chat with MemOS using a non-streaming response route."""
+        user_id = kwargs.get("user_id")
+        if not user_id:
+            raise APIError("Chat requires user_id")
+
+        # Core API route from the official /api_docs/chat/chat documentation.
+        simple_payload: dict[str, Any] = {
+            "user_id": user_id,
+            "query": query,
+        }
+        conversation_id = kwargs.get("conversation_id")
+        if conversation_id is not None:
+            simple_payload["conversation_id"] = conversation_id
+        try:
+            data = self.transport.request_json("POST", "/chat", json_body=simple_payload)
+            return normalize_chat_response(data, original_query=query)
+        except Exception as simple_error:
+            last_error: Exception | None = simple_error
+
+        # Product API route from the newer /api-reference/chat-with-memos-(complete-response)
+        # documentation. Keep it as a compatibility fallback.
+        payload: dict[str, Any] = {
+            "user_id": user_id,
+            "query": query,
+        }
+        field_map = {
+            "conversation_id": "session_id",
+            "agent_id": "agent_id",
+            "app_id": "app_id",
+            "run_id": "run_id",
+            "mode": "mode",
+            "system_prompt": "system_prompt",
+            "top_k": "top_k",
+            "pref_top_k": "pref_top_k",
+            "model_name_or_path": "model_name_or_path",
+            "max_tokens": "max_tokens",
+            "temperature": "temperature",
+            "top_p": "top_p",
+            "internet_search": "internet_search",
+            "include_preference": "include_preference",
+            "add_message_on_answer": "add_message_on_answer",
+            "mem_cube_id": "mem_cube_id",
+            "readable_cube_ids": "readable_cube_ids",
+            "writable_cube_ids": "writable_cube_ids",
+            "history": "history",
+            "filter": "filter",
+            "threshold": "threshold",
+            "moscube": "moscube",
+        }
+        for source_field, payload_field in field_map.items():
+            value = kwargs.get(source_field)
+            if value is not None:
+                payload[payload_field] = value
+
+        try:
+            data = self.transport.request_first_json(
+                "POST",
+                [
+                    "/product/chat/complete",
+                    "/chat/complete",
+                ],
+                json_body=payload,
+            )
+            return normalize_chat_response(data, original_query=query)
+        except Exception as exc:
+            last_error = exc
+
+        if last_error is not None:
+            raise last_error
+        raise APIError("Failed to chat with MemOS")
 
     @staticmethod
     def _find_memory_by_id(memories: list[dict[str, Any]], memory_id: str) -> dict[str, Any] | None:

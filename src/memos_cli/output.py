@@ -114,6 +114,22 @@ def format_add_result(console: Console, result: dict | list, output: str = "text
     console.print()
 
 
+def format_chat_result(console: Console, result: dict, output: str = "text") -> None:
+    """Format chat output."""
+    if output == "json":
+        format_json(console, result)
+        return
+
+    answer = result.get("answer", "")
+    if answer:
+        console.print()
+        console.print(answer)
+        console.print()
+        return
+
+    console.print("  [dim]No chat response returned.[/]")
+
+
 def format_agent_envelope(
     console: Console,
     *,

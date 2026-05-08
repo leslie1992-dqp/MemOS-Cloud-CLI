@@ -27,6 +27,11 @@ class BackendBase(ABC):
     def list_memories(self, **kwargs) -> list[dict[str, Any]]:
         """List memories."""
         pass
+
+    @abstractmethod
+    def chat(self, query: str, **kwargs) -> dict[str, Any]:
+        """Chat with MemOS."""
+        pass
     
     @abstractmethod
     def get_memory(self, memory_id: str) -> dict[str, Any]:

@@ -21,7 +21,7 @@ MemOS-CLI/
 │   └── commands/            # CLI commands
 │       ├── init.py          # memos init
 │       ├── config_cmd.py    # memos config (show/get/set)
-│       └── memory.py        # add/search/list/get/delete
+│       └── memory.py        # add/search/list/chat/get/delete
 ├── skills/
 │   ├── memos-shared/        # Shared config and runtime rules
 │   ├── memos-memory/        # Memory domain skill (P0 commands)
@@ -69,13 +69,19 @@ memos search -q "programming languages"
 memos list
 ```
 
-### 5. Get Memory by ID
+### 5. Chat with MemOS
+
+```bash
+memos chat "What do you know about my preferences?"
+```
+
+### 6. Get Memory by ID
 
 ```bash
 memos get mem_123456
 ```
 
-### 6. Delete Memory
+### 7. Delete Memory
 
 ```bash
 memos delete mem_123456

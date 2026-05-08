@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import unittest
 
-from memos_cli.backend.normalizers import normalize_add_response, normalize_search_response
+from memos_cli.backend.normalizers import (
+    normalize_add_response,
+    normalize_chat_response,
+    normalize_search_response,
+)
 
 
 class BackendNormalizationTests(unittest.TestCase):
@@ -42,6 +46,18 @@ class BackendNormalizationTests(unittest.TestCase):
 
         self.assertEqual(result["results"][0]["id"], "mem-2")
         self.assertEqual(result["results"][0]["memory"], "User is allergic to peanuts")
+
+    def test_normalize_chat_response_extracts_answer_from_data_string(self) -> None:
+        payload = {
+            "code": 200,
+            "message": "Operation successful",
+            "data": "Hello from MemOS",
+        }
+
+        result = normalize_chat_response(payload, original_query="Say hi")
+
+        self.assertEqual(result["answer"], "Hello from MemOS")
+        self.assertEqual(result["query"], "Say hi")
 
 
 if __name__ == "__main__":

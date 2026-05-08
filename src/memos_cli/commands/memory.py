@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import typer
 
-from memos_cli.commands.memory_cmd import cmd_add, cmd_delete, cmd_get, cmd_list, cmd_search
+from memos_cli.commands.memory_cmd import cmd_add, cmd_chat, cmd_delete, cmd_get, cmd_list, cmd_search
 
 
 def add(
@@ -61,6 +61,65 @@ def list(
 ):
     """List memories."""
     cmd_list(user_id=user_id, limit=limit, json_output=json_output)
+
+
+def chat(
+    query: str | None = typer.Argument(None, help="Chat query"),
+    query_option: str | None = typer.Option(None, "--query", "-q", help="Chat query"),
+    user_id: str | None = typer.Option(None, "--user-id", help="User ID"),
+    agent_id: str | None = typer.Option(None, "--agent-id", help="Agent ID"),
+    app_id: str | None = typer.Option(None, "--app-id", help="App ID"),
+    run_id: str | None = typer.Option(None, "--run-id", help="Run ID"),
+    conversation_id: str | None = typer.Option(None, "--conversation-id", help="Conversation ID"),
+    mode: str | None = typer.Option(None, "--mode", help="Search mode: fast, fine, or mixture"),
+    top_k: int | None = typer.Option(None, "--top-k", min=1, help="Number of memory results"),
+    pref_top_k: int | None = typer.Option(None, "--pref-top-k", min=1, help="Number of preference results"),
+    model_name_or_path: str | None = typer.Option(None, "--model", help="Chat model name"),
+    system_prompt: str | None = typer.Option(None, "--system-prompt", help="Base system prompt"),
+    max_tokens: int | None = typer.Option(None, "--max-tokens", min=1, help="Maximum generated tokens"),
+    temperature: float | None = typer.Option(None, "--temperature", min=0.0, help="Sampling temperature"),
+    top_p: float | None = typer.Option(None, "--top-p", min=0.0, max=1.0, help="Top-p sampling"),
+    mem_cube_id: str | None = typer.Option(None, "--mem-cube-id", help="Single cube ID to use for chat"),
+    readable_cube_ids: str | None = typer.Option(None, "--readable-cube-ids", help="JSON array of cube IDs user can read"),
+    writable_cube_ids: str | None = typer.Option(None, "--writable-cube-ids", help="JSON array of cube IDs user can write"),
+    history: str | None = typer.Option(None, "--history", help="JSON array of chat history messages"),
+    filter_json: str | None = typer.Option(None, "--filter", help="JSON object for memory filtering"),
+    threshold: float | None = typer.Option(None, "--threshold", min=0.0, max=1.0, help="Reference filtering threshold"),
+    moscube: bool | None = typer.Option(None, "--moscube/--no-moscube", help="Use deprecated legacy MemOSCube pipeline"),
+    include_preference: bool | None = typer.Option(None, "--include-preference/--no-include-preference", help="Include preference memories"),
+    add_message_on_answer: bool | None = typer.Option(None, "--add-message-on-answer/--no-add-message-on-answer", help="Store the dialog after answering"),
+    internet_search: bool | None = typer.Option(None, "--internet-search/--no-internet-search", help="Enable internet search"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Chat with MemOS."""
+    cmd_chat(
+        query,
+        query_option=query_option,
+        user_id=user_id,
+        agent_id=agent_id,
+        app_id=app_id,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        mode=mode,
+        top_k=top_k,
+        pref_top_k=pref_top_k,
+        model_name_or_path=model_name_or_path,
+        system_prompt=system_prompt,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        mem_cube_id=mem_cube_id,
+        readable_cube_ids=readable_cube_ids,
+        writable_cube_ids=writable_cube_ids,
+        history=history,
+        filter_json=filter_json,
+        threshold=threshold,
+        moscube=moscube,
+        include_preference=include_preference,
+        add_message_on_answer=add_message_on_answer,
+        internet_search=internet_search,
+        json_output=json_output,
+    )
 
 
 def get(

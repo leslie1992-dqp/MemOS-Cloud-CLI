@@ -58,6 +58,7 @@ class CLIHelpTests(unittest.TestCase):
         self.assertIn("add", result.stdout)
         self.assertIn("list", result.stdout)
         self.assertIn("search", result.stdout)
+        self.assertIn("chat", result.stdout)
 
     def test_init_help(self) -> None:
         result = run_cli(["init", "--help"])
@@ -82,6 +83,14 @@ class CLIHelpTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("--user-id", result.stdout)
         self.assertIn("--limit", result.stdout)
+
+    def test_chat_help(self) -> None:
+        result = run_cli(["chat", "--help"])
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("--query", result.stdout)
+        self.assertIn("--system-prompt", result.stdout)
+        self.assertIn("--mem-cube-id", result.stdout)
+        self.assertIn("--history", result.stdout)
 
     def test_config_help(self) -> None:
         result = run_cli(["config", "--help"])
@@ -125,6 +134,22 @@ class CLIIsolatedTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("No query provided", result.stdout + result.stderr)
 
+    def test_chat_without_query_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as home_dir:
+            result = run_cli(["chat"], home_dir=home_dir)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("No query provided", result.stdout + result.stderr)
+
+    def test_chat_with_invalid_history_json_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as home_dir:
+            result = run_cli(
+                ["chat", "-q", "hello", "--history", "{bad"],
+                home_dir=home_dir,
+                env_override={"MEMOS_API_KEY": "test-key"},
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Invalid JSON for --history", result.stdout + result.stderr)
+
     def test_list_with_env_key_reaches_backend_layer(self) -> None:
         with tempfile.TemporaryDirectory() as home_dir:
             result = run_cli(
@@ -140,6 +165,17 @@ class CLIIsolatedTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as home_dir:
             result = run_cli(
                 ["add", "-m", "hello world"],
+                home_dir=home_dir,
+                env_override={"MEMOS_API_KEY": "test-key"},
+            )
+            self.assertNotEqual(result.returncode, 0)
+            combined = result.stdout + result.stderr
+            self.assertNotIn("No API key configured", combined)
+
+    def test_chat_with_env_key_reaches_backend_layer(self) -> None:
+        with tempfile.TemporaryDirectory() as home_dir:
+            result = run_cli(
+                ["chat", "-q", "hello"],
                 home_dir=home_dir,
                 env_override={"MEMOS_API_KEY": "test-key"},
             )
