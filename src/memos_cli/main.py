@@ -21,7 +21,7 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode="rich",
     pretty_exceptions_enable=False,
-    add_completion=False,
+    add_completion=True,
     subcommand_metavar="<command> [options]",
     options_metavar="",
 )
