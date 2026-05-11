@@ -104,13 +104,15 @@ memos kb file add kb_123 https://example.com/doc-a.pdf https://example.com/doc-b
 
 ## Output Modes
 
-Each subcommand supports `--format` and `--detail` at the end of the command line:
+Each subcommand supports trailing `--format`. Only `search`, `list`, and `get` also support trailing `--detail`:
 
 ```bash
 memos search -q "python" --format table --detail simple
 memos search -q "python" --format markdown --detail detail
 memos search -q "python" --format agent --detail simple
 memos search -q "python" --format json --detail detail
+memos list --user-id user_123 --format table --detail simple
+memos get mem_123456 --format json --detail detail
 memos add -m "User prefers TypeScript" --format json
 ```
 
@@ -145,7 +147,7 @@ memos config set defaults.user_id user123
 Use the provided skills to enable automatic memory management in your agent framework.
 
 Use these skills when:
-- you need shared setup, identity, and per-command output conventions such as trailing `--format` and `--detail`: `skills/memos-shared/SKILL.md`
+- you need shared setup, identity, and per-command output conventions such as trailing `--format`, plus trailing `--detail` for `search`/`list`/`get`: `skills/memos-shared/SKILL.md`
 - you need configuration and initialization commands: `skills/memos-config/SKILL.md`
 - you need memory operations such as `extract`, `add`, `search`, `list`, `chat`, `get`, and `delete`: `skills/memos-memory/SKILL.md`
 - you need knowledge base operations: `skills/memos-kb/SKILL.md`

@@ -29,7 +29,6 @@ def add(
     run_id: str | None = typer.Option(None, "--run-id", help="Run ID"),
     conversation_id: str | None = typer.Option(None, "--conversation-id", help="Conversation ID"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Add a new memory."""
     cmd_add(
@@ -41,7 +40,7 @@ def add(
         run_id=run_id,
         conversation_id=conversation_id,
         output_format=output_format,
-        detail=detail,
+        detail=None,
     )
 
 
@@ -59,7 +58,6 @@ def extract(
     run_id: str | None = typer.Option(None, "--run-id", help="Run ID"),
     conversation_id: str | None = typer.Option(None, "--conversation-id", help="Conversation ID"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Extract memory candidates without storing them."""
     cmd_extract(
@@ -72,7 +70,7 @@ def extract(
         run_id=run_id,
         conversation_id=conversation_id,
         output_format=output_format,
-        detail=detail,
+        detail=None,
     )
 
 
@@ -86,7 +84,6 @@ def feedback(
     conversation_id: str | None = typer.Option(None, "--conversation-id", help="Conversation ID"),
     allow_knowledgebase_ids: str | None = typer.Option(None, "--allow-knowledgebase-ids", help="JSON array of allowed knowledge base IDs"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Add feedback / summary content."""
     cmd_feedback(
@@ -99,7 +96,7 @@ def feedback(
         conversation_id=conversation_id,
         allow_knowledgebase_ids=allow_knowledgebase_ids,
         output_format=output_format,
-        detail=detail,
+        detail=None,
     )
 
 
@@ -140,7 +137,6 @@ def rerank(
     model: str | None = typer.Option(None, "--model", help="Reranker model name"),
     top_n: int | None = typer.Option(None, "--top-n", min=1, help="Return top N results only"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Rerank candidate documents for a query."""
     cmd_rerank(
@@ -153,7 +149,7 @@ def rerank(
         model=model,
         top_n=top_n,
         output_format=output_format,
-        detail=detail,
+        detail=None,
     )
 
 
@@ -194,7 +190,6 @@ def chat(
     add_message_on_answer: bool | None = typer.Option(None, "--add-message-on-answer/--no-add-message-on-answer", help="Store the dialog after answering"),
     internet_search: bool | None = typer.Option(None, "--internet-search/--no-internet-search", help="Enable internet search"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Chat with MemOS."""
     cmd_chat(
@@ -224,7 +219,7 @@ def chat(
         add_message_on_answer=add_message_on_answer,
         internet_search=internet_search,
         output_format=output_format,
-        detail=detail,
+        detail=None,
     )
 
 
@@ -242,7 +237,6 @@ def delete(
     memory_id: str = typer.Argument(..., help="Memory ID to delete"),
     user_id: str | None = typer.Option(None, "--user-id", help="User ID"),
     output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
-    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
 ):
     """Delete a memory by ID."""
-    cmd_delete(memory_id, user_id=user_id, output_format=output_format, detail=detail)
+    cmd_delete(memory_id, user_id=user_id, output_format=output_format, detail=None)

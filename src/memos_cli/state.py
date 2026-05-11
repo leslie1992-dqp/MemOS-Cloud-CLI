@@ -12,6 +12,7 @@ class RuntimeOptions:
 
     api_key: str | None = None
     base_url: str | None = None
+    framework: str | None = None
 
 
 _runtime_options = RuntimeOptions()
@@ -21,6 +22,7 @@ def set_runtime_options(
     *,
     api_key: str | None = None,
     base_url: str | None = None,
+    framework: str | None = None,
 ) -> None:
     """Update process-local runtime options."""
     global _runtime_options
@@ -28,6 +30,8 @@ def set_runtime_options(
         _runtime_options.api_key = api_key
     if base_url is not None:
         _runtime_options.base_url = base_url
+    if framework is not None:
+        _runtime_options.framework = framework
 
 
 def get_runtime_options() -> RuntimeOptions:
@@ -35,6 +39,7 @@ def get_runtime_options() -> RuntimeOptions:
     return RuntimeOptions(
         api_key=_runtime_options.api_key,
         base_url=_runtime_options.base_url,
+        framework=_runtime_options.framework,
     )
 
 

@@ -6,6 +6,8 @@ import json
 import subprocess
 from typing import Any
 
+from memos_cli.state import get_runtime_options
+
 
 def capture_event(event_name: str, properties: dict[str, Any] | None = None) -> None:
     """Capture telemetry event (non-blocking, never fails)."""
@@ -21,8 +23,7 @@ def capture_event(event_name: str, properties: dict[str, Any] | None = None) -> 
         if framework:
             properties["framework"] = framework
         
-        # TODO: Implement actual telemetry sending
-        # For now, just log to file for debugging
+        # Persist CLI-side attribution for metrics/debugging.
         _log_event(event_name, properties)
         
     except Exception:
@@ -31,6 +32,10 @@ def capture_event(event_name: str, properties: dict[str, Any] | None = None) -> 
 
 def detect_framework() -> str | None:
     """Detect which agent framework is calling the CLI."""
+    runtime_framework = get_runtime_options().framework
+    if runtime_framework:
+        return runtime_framework.strip().lower()
+
     if framework := os.getenv("MEMOS_FRAMEWORK"):
         return framework.strip().lower()
 
@@ -58,7 +63,7 @@ def detect_framework() -> str | None:
 
 
 def _log_event(event_name: str, properties: dict) -> None:
-    """Log event to local file for debugging."""
+    """Log event to local file for attribution and debugging."""
     try:
         from pathlib import Path
         log_dir = Path.home() / ".memos" / "logs"

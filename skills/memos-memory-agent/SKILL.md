@@ -35,3 +35,18 @@ Best practices:
 - keep stored memories short, factual, and reusable;
 - compress search queries before calling the CLI;
 - prefer fewer high-signal memories over verbose summaries.
+
+Configurable fields:
+- `MEMOS_USER_ID`: default user scope.
+- `MEMOS_CONVERSATION_ID`: default conversation scope.
+- `MEMOS_AGENT_ID`: agent identity for isolation.
+- `MEMOS_APP_ID`: app identity for attribution.
+- `MEMOS_RUN_ID`: run-level trace id.
+- `MEMOS_FRAMEWORK`: explicit framework label when caller auto-detection is ambiguous.
+
+Evaluation checklist:
+- retrieval uses `memos search ... --format agent --detail simple` before response generation;
+- stored memories are durable and reusable rather than transient execution noise;
+- search and add calls share the same scope fields when they belong to one conversation flow;
+- outputs chosen for each step are parseable by the next step in the workflow;
+- sensitive data and unconfirmed guesses are not persisted.

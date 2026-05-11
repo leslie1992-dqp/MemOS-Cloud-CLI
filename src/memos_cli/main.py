@@ -10,6 +10,7 @@ from memos_cli.commands.config_cmd import config_app
 from memos_cli.commands.kb import kb_app
 from memos_cli.commands.memory import add, extract, feedback, rerank, search, list, chat, get, delete
 from memos_cli.state import set_runtime_options
+from memos_cli.telemetry import detect_framework
 
 console = Console()
 err_console = Console(stderr=True)
@@ -36,6 +37,9 @@ def main_callback(
     base_url: str | None = typer.Option(
         None, "--base-url", help="Override API base URL from config."
     ),
+    framework: str | None = typer.Option(
+        None, "--framework", help="Override detected caller framework for attribution."
+    ),
 ):
     """MemOS CLI - Universal memory interface for AI agents."""
     if version:
@@ -45,6 +49,7 @@ def main_callback(
     set_runtime_options(
         api_key=api_key,
         base_url=base_url,
+        framework=framework or detect_framework(),
     )
 
     if ctx.invoked_subcommand:
@@ -53,6 +58,7 @@ def main_callback(
             extra={
                 "override_api_key": bool(api_key),
                 "override_base_url": bool(base_url),
+                "framework": framework or detect_framework(),
             },
         )
 

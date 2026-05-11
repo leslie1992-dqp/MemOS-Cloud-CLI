@@ -164,7 +164,7 @@ def cmd_add(
     start_time = time.time()
     content = read_add_content(text, message)
     final_output = resolve_output_format(output_format)
-    validate_detail(detail)
+    final_detail = validate_detail(detail)
 
     try:
         config, backend = _load_backend()
@@ -198,6 +198,7 @@ def cmd_add(
             duration_ms=duration_ms,
             scope={**scope, "conversation_id": final_conversation_id},
             count=len(result.get("results", [])),
+            detail=final_detail,
         )
         return
     format_add_result(console, result, output="json" if final_output == "json" else "text")
@@ -220,7 +221,7 @@ def cmd_extract(
     start_time = time.time()
     content = read_add_content(text, message)
     final_output = resolve_output_format(output_format)
-    validate_detail(detail)
+    final_detail = validate_detail(detail)
 
     try:
         config, backend = _load_backend()
@@ -255,6 +256,7 @@ def cmd_extract(
             duration_ms=duration_ms,
             scope={**scope, "conversation_id": final_conversation_id},
             count=len(result.get("results", [])),
+            detail=final_detail,
         )
         return
     format_extract_result(console, result, output="json" if final_output == "json" else "text")
@@ -277,7 +279,7 @@ def cmd_feedback(
     start_time = time.time()
     content = read_add_content(text, feedback_content)
     final_output = resolve_output_format(output_format)
-    validate_detail(detail)
+    final_detail = validate_detail(detail)
 
     try:
         config, backend = _load_backend()
@@ -313,6 +315,7 @@ def cmd_feedback(
             data=result,
             duration_ms=duration_ms,
             scope={**scope, "conversation_id": final_conversation_id},
+            detail=final_detail,
         )
         return
     format_feedback_result(console, result, output="json" if final_output == "json" else "text")
@@ -399,7 +402,7 @@ def cmd_rerank(
     final_query = resolve_search_query(query, query_option)
     final_documents = resolve_rerank_documents(documents, document_options, documents_json)
     final_output = resolve_output_format(output_format)
-    validate_detail(detail)
+    final_detail = validate_detail(detail)
 
     try:
         _, backend = _load_backend()
@@ -421,6 +424,7 @@ def cmd_rerank(
             data=result,
             duration_ms=duration_ms,
             count=len(result.get("results", [])),
+            detail=final_detail,
         )
         return
     format_rerank_result(console, result, output="json" if final_output == "json" else "text")
@@ -505,7 +509,7 @@ def cmd_chat(
     start_time = time.time()
     final_query = resolve_chat_query(query, query_option)
     final_output = resolve_output_format(output_format)
-    validate_detail(detail)
+    final_detail = validate_detail(detail)
 
     try:
         config, backend = _load_backend()
@@ -556,6 +560,7 @@ def cmd_chat(
             data=result,
             duration_ms=duration_ms,
             scope={**scope, "conversation_id": final_conversation_id},
+            detail=final_detail,
         )
         return
     format_chat_result(console, result, output="json" if final_output == "json" else "text")

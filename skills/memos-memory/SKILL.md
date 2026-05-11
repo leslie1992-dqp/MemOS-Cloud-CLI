@@ -22,10 +22,10 @@ Never store:
 
 Use these commands:
 - `memos add -m "<fact>" --user-id <USER_ID> --conversation-id <CONV_ID> --format json`
-- `memos extract -m "<message>" --user-id <USER_ID> --conversation-id <CONV_ID> --format json --detail detail`
+- `memos extract -m "<message>" --user-id <USER_ID> --conversation-id <CONV_ID> --format json`
 - `memos search -q "<query>" --user-id <USER_ID> --conversation-id <CONV_ID> --format agent --detail simple`
 - `memos list --user-id <USER_ID> --conversation-id <CONV_ID> --format table --detail simple`
-- `memos chat -q "<message>" --user-id <USER_ID> --conversation-id <CONV_ID> --format agent --detail detail`
+- `memos chat -q "<message>" --user-id <USER_ID> --conversation-id <CONV_ID> --format agent`
 - `memos get <MEMORY_ID> --format json --detail detail`
 - `memos delete <MEMORY_ID> --format json`
 
@@ -41,7 +41,7 @@ Working rules:
 - do not mechanically copy entire messages into search queries; compress them into entities, preferences, and intent;
 - append `--format json` at the end of the command whenever a later step needs exact `memory_id` or structured records;
 - append `--format agent` at the end of the command when the result will be injected back into model context;
-- keep `--format` and `--detail` after the command arguments and business options, at the end of the command line;
+- keep `--format` at the end of every command line, and keep `--detail` at the end only for `search`, `list`, and `get`;
 - read result counts from `count` and structured payloads from `data`;
 - if you already have a `memory_id`, do not search first just to guess.
 
@@ -57,7 +57,7 @@ memos search -q "user preferences about restaurants" --user-id <USER_ID> --conve
 ```
 
 ```bash
-memos extract -m "User likes coffee and prefers dark mode" --user-id <USER_ID> --conversation-id <CONV_ID> --format json --detail detail
+memos extract -m "User likes coffee and prefers dark mode" --user-id <USER_ID> --conversation-id <CONV_ID> --format json
 ```
 
 ```bash

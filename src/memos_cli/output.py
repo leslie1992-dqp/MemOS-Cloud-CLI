@@ -588,17 +588,14 @@ def format_agent_envelope(
     """Output structured JSON envelope for agent mode."""
     identity = {k: v for k, v in (scope or {}).items() if v}
     warnings: list[str] = []
-    context_block = None
-    payload_data: Any = data
-
-    if isinstance(data, list):
-        records = data if records_preformatted else [build_memory_record(item, detail=detail) for item in data]
-        payload_data = {
-            "context_block": _build_context_block(records, identity=identity, detail=detail),
-            "token_estimate": _estimate_tokens(records, detail=detail),
-            "warnings": warnings,
-        }
-        context_block = payload_data["context_block"]
+    payload_data = _build_agent_payload(
+        command=command,
+        data=data,
+        identity=identity,
+        detail=detail,
+        records_preformatted=records_preformatted,
+        warnings=warnings,
+    )
 
     envelope: dict[str, Any] = {
         "status": "success",
@@ -618,6 +615,117 @@ def format_agent_envelope(
     envelope["data"] = payload_data
 
     console.print_json(json.dumps(envelope, default=str))
+
+
+def _build_agent_payload(
+    *,
+    command: str,
+    data: Any,
+    identity: dict[str, Any],
+    detail: str,
+    records_preformatted: bool,
+    warnings: list[str],
+) -> dict[str, Any]:
+    """Build command-aware agent payloads with distinct simple/detail output."""
+    if isinstance(data, list):
+        records = data if records_preformatted else [build_memory_record(item, detail=detail) for item in data]
+        return {
+            "context_block": _build_context_block(records, identity=identity, detail=detail),
+            "token_estimate": _estimate_tokens(records, detail=detail),
+            "warnings": warnings,
+        }
+
+    if command in {"add", "extract"}:
+        results = _extract_memory_result_records(data, detail=detail)
+        payload: dict[str, Any] = {
+            "results": results,
+            "count": len(results),
+            "warnings": warnings,
+        }
+        if detail == "detail":
+            payload["message"] = data.get("message") or data.get("msg")
+            if command == "extract":
+                payload["original_text"] = data.get("original_text")
+        return payload
+
+    if command == "feedback":
+        payload = {
+            "feedback_content": data.get("feedback_content", ""),
+            "warnings": warnings,
+        }
+        if detail == "detail":
+            payload["message"] = data.get("message") or data.get("msg")
+            if identity:
+                payload["identity"] = identity
+        return payload
+
+    if command == "chat":
+        payload = {
+            "answer": data.get("answer", ""),
+            "warnings": warnings,
+        }
+        if detail == "detail":
+            payload["query"] = data.get("query")
+            payload["memories"] = _extract_memory_result_records(
+                {"results": data.get("memorys", [])},
+                detail=detail,
+            )
+            if identity:
+                payload["identity"] = identity
+        return payload
+
+    if command == "rerank":
+        results = data.get("results", []) if isinstance(data, dict) else []
+        if detail == "simple":
+            compact = [
+                {
+                    "rank": item.get("rank"),
+                    "score": item.get("relevance_score", item.get("score")),
+                    "document": item.get("text") or item.get("document", {}).get("text") or "",
+                }
+                for item in results
+            ]
+            return {"results": compact, "count": len(compact), "warnings": warnings}
+        return {
+            "query": data.get("query"),
+            "model": data.get("model"),
+            "results": results,
+            "count": len(results),
+            "warnings": warnings,
+        }
+
+    return {"result": data, "warnings": warnings}
+
+
+def _extract_memory_result_records(data: dict[str, Any], *, detail: str) -> list[dict[str, Any]]:
+    """Normalize command result lists into stable memory-like records."""
+    raw_results = data.get("results", []) if isinstance(data, dict) else []
+    records: list[dict[str, Any]] = []
+    for item in raw_results:
+        if not isinstance(item, dict):
+            continue
+        if any(key in item for key in ("updated_at", "memory_type", "confidence", "relativity", "score", "type")):
+            records.append(build_memory_record(item, detail=detail))
+            continue
+
+        record: dict[str, Any] = {
+            "id": item.get("id") or item.get("memory_id"),
+            "memory": item.get("memory") or item.get("text") or item.get("content") or "",
+            "updated_at": _format_date(item.get("updated_at") or item.get("created_at")),
+        }
+        if detail == "detail":
+            metadata = {
+                "memory_type": item.get("memory_type") or item.get("type"),
+                "confidence": item.get("confidence"),
+                "relativity": item.get("relativity") or item.get("score"),
+                "user_id": item.get("user_id"),
+                "mem_cube_id": item.get("mem_cube_id") or item.get("cube_id"),
+            }
+            filtered_metadata = {k: v for k, v in metadata.items() if v is not None}
+            if filtered_metadata:
+                record["metadata"] = filtered_metadata
+        records.append({k: v for k, v in record.items() if v is not None and v != {}})
+    return records
 
 
 def format_memory_json_envelope(

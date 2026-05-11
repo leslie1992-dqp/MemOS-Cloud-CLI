@@ -14,7 +14,8 @@ Use this skill when:
 Always apply:
 - initialize the CLI before domain commands if the environment may be fresh;
 - prefer stable identity fields such as `--user-id` and `--conversation-id` when available;
-- use per-command `--format` and `--detail` flags deliberately based on whether the consumer is a human, an agent, or a program;
+- use per-command `--format` deliberately based on whether the consumer is a human, an agent, or a program;
+- use `--detail` only on `memos search`, `memos list`, and `memos get`;
 - keep API keys out of logs, prompts, and stored memories.
 
 Use these commands:
@@ -46,7 +47,7 @@ Output conventions:
 - append `--format markdown` at the end of a command for copying into issues, PRs, or docs;
 - append `--format agent` at the end of a command when the caller needs a JSON envelope plus a model-facing context block;
 - append `--format json` at the end of a command for stable programmatic parsing;
-- append `--detail simple` or `--detail detail` at the end of a command to control verbosity;
+- append `--detail simple` or `--detail detail` only on `memos search`, `memos list`, and `memos get`;
 - expect machine-readable outputs to expose fields such as `status`, `command`, `duration_ms`, `scope`, `count`, and `data`.
 
 Common failures:
