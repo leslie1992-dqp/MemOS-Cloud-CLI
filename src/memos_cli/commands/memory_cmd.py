@@ -12,8 +12,10 @@ from rich.console import Console
 from memos_cli.backend.memos_api import APIError, AuthError, get_backend
 from memos_cli.config import DEFAULT_CONVERSATION_ID, load_config
 from memos_cli.output import (
+    _build_origin_records,
     extract_memory_records_from_response,
     format_add_result,
+    format_origin_result,
     format_extract_result,
     format_agent_envelope,
     format_chat_result,
@@ -689,6 +691,42 @@ def cmd_delete(
         format_json(console, result)
         return
     console.print("[green]✓[/] Memory deleted")
+
+
+def cmd_origin(
+    *,
+    memory_id: str | None,
+    output_format: str,
+    detail: str,
+) -> None:
+    """Execute origin."""
+    final_output = resolve_output_format(output_format)
+    final_detail = validate_detail(detail)
+    if not memory_id:
+        console.print("[red]Error:[/] MEMORY_ID is required")
+        raise typer.Exit(1)
+    try:
+        _, backend = _load_backend()
+        result = backend.get_memory_origin(memory_id)
+    except Exception as exc:
+        _handle_error(exc)
+
+    if final_output == "agent":
+        records = _build_origin_records(result, detail=final_detail)
+        format_agent_envelope(
+            console,
+            command="origin",
+            data=records,
+            count=len(records),
+            detail=final_detail,
+        )
+        return
+    format_origin_result(
+        console,
+        result,
+        output="json" if final_output == "json" else ("markdown" if final_output == "markdown" else "text"),
+        detail=final_detail,
+    )
 
 
 def main() -> Any:

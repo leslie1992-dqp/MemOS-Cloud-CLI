@@ -21,7 +21,7 @@ MemOS-CLI/
 │   └── commands/            # CLI 命令
 │       ├── init.py          # memos init
 │       ├── config_cmd.py    # memos config (show/get/set)
-│       └── memory.py        # add/search/get/delete/extract/rerank/feedback/chat
+│       └── memory.py        # add/search/get/origin/delete/extract/rerank/feedback/chat
 ├── skills/
 │   ├── memos-memory/        # 记忆领域 skill（P0 命令）
 │   │   ├── SKILL.md         # Skill 入口与使用规范
@@ -95,6 +95,12 @@ memos get user_123
 
 ```bash
 memos delete mem_123456
+```
+
+### 7. 获取记忆原始来源
+
+```bash
+memos origin mem_123456
 ```
 
 ## 命令说明
@@ -177,6 +183,32 @@ memos delete --user-id user_123 --format json
 
 - `MEMORY_ID`：待删除的记忆 ID；条件必填；传 `MEMORY_ID` 表示删除单条记忆。
 - `--user-id`：删除该用户的全部记忆；条件必填；传 `--user-id` 表示删除该用户的全部记忆。
+
+### `memos origin`
+
+用于按 memory ID 获取这条记忆的原始来源内容。
+
+示例：
+
+```bash
+memos origin mem_123456
+memos origin mem_123456 --detail simple
+memos origin mem_123456 --detail detail
+memos origin mem_123456 --format markdown --detail detail
+memos origin mem_123456 --format json
+```
+
+参数说明：
+
+- `[MEMORY_ID]`：记忆 ID；必填。
+- `--format`：输出格式；可选；默认值为 `table`。
+- `--detail`：输出详略级别；可选；默认值为 `simple`；支持 `simple`、`detail`。
+
+默认展示内容包括：
+
+- `simple`：展示 `memory_id`、`memory` 摘要和来源内容。
+- `detail`：展示 `memory_id`、`memory` 摘要、来源类型、角色、时间、语言和来源内容。
+- 原始来源消息取自 `data.metadata.sources`。
 
 ### `memos extract`
 

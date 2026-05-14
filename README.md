@@ -21,7 +21,7 @@ MemOS-CLI/
 │   └── commands/            # CLI commands
 │       ├── init.py          # memos init
 │       ├── config_cmd.py    # memos config (show/get/set)
-│       └── memory.py        # add/search/get/delete/extract/rerank/feedback/chat
+│       └── memory.py        # add/search/get/origin/delete/extract/rerank/feedback/chat
 ├── skills/
 │   ├── memos-memory/        # Memory domain skill (P0 commands)
 │   │   ├── SKILL.md         # Skill entry and usage protocol
@@ -95,6 +95,12 @@ memos get user_123
 
 ```bash
 memos delete mem_123456
+```
+
+### 7. Get Memory Origin
+
+```bash
+memos origin mem_123456
 ```
 
 ## Command Reference
@@ -177,6 +183,32 @@ Parameters:
 
 - `MEMORY_ID`: Memory ID to delete; conditionally required; use `MEMORY_ID` to delete one memory.
 - `--user-id`: Delete all memories for the given user ID; conditionally required; use `--user-id` to delete all memories for a user.
+
+### `memos origin`
+
+Get the original source payload for a specific memory by memory ID.
+
+Example:
+
+```bash
+memos origin mem_123456
+memos origin mem_123456 --detail simple
+memos origin mem_123456 --detail detail
+memos origin mem_123456 --format markdown --detail detail
+memos origin mem_123456 --format json
+```
+
+Parameters:
+
+- `[MEMORY_ID]`: Memory ID; required.
+- `--format`: Output format; optional; defaults to `table`.
+- `--detail`: Output detail level; optional; defaults to `simple`; supported values: `simple`, `detail`.
+
+Default display includes:
+
+- `simple`: `memory_id`, `memory` summary, and source content.
+- `detail`: `memory_id`, `memory` summary, source type, role, time, language, and source content.
+- source messages are extracted from `data.metadata.sources`.
 
 ### `memos extract`
 

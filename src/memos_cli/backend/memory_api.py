@@ -480,6 +480,17 @@ class MemoryAPI:
             raise last_error
         raise APIError(f"Memory not found: {memory_id}")
 
+    def get_memory_origin(self, memory_id: str, **kwargs: Any) -> dict[str, Any]:
+        """Get origin/source payload for a specific memory via the official route."""
+        memory_id = memory_id.strip()
+        if not memory_id:
+            raise APIError("Memory ID is required")
+        return self.transport.request_json(
+            "GET",
+            f"/v1/get/memory/{memory_id}",
+            include_tracking_headers=False,
+        )
+
     def delete_memory(self, memory_ids: list[str], **kwargs: Any) -> dict[str, Any]:
         """Delete memories using the documented API."""
         payload: dict[str, Any] = {}

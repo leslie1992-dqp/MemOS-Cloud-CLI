@@ -21,6 +21,8 @@ from memos_cli.backend.memos_api import APIError, AuthError, get_backend
 
 console = Console()
 DEFAULT_BASE_URL = "https://memos.memtensor.cn/api/openmem/v1"
+GUIDANCE_START = "<!-- MEMOS_CLI:START -->"
+GUIDANCE_END = "<!-- MEMOS_CLI:END -->"
 SUPPORTED_SKILL_AGENTS = {
     "codex": Path.home() / ".codex" / "skills",
     "cursor": Path.home() / ".cursor" / "skills",
@@ -77,6 +79,75 @@ def _install_bundled_skills(agent: str) -> Path:
     shutil.copytree(source_skill, destination)
 
     return memos_target
+
+
+def _resolve_guidance_file(agent: str) -> Path:
+    """Resolve the global guidance file path for the target agent."""
+    skills_root = _resolve_skills_dir(agent)
+    agent_home = skills_root.parent
+    normalized = agent.strip().lower()
+    if normalized == "claude":
+        return agent_home / "CLAUDE.md"
+    return agent_home / "AGENTS.md"
+
+
+def _build_agent_guidance(agent: str) -> str:
+    """Build agent-specific MemOS CLI guidance content."""
+    normalized = agent.strip().lower()
+    lines = [
+        GUIDANCE_START,
+        "## MemOS CLI",
+        "",
+        "Use MemOS CLI in every conversation.",
+        "",
+        "Rules:",
+        "- In every conversation, run MemOS search before answering.",
+        "- In every conversation, run MemOS add after answering.",
+        "- If search or add returns insufficient information, rewrite the query and try again.",
+        "- If plugin-injected context already contains enough information for this turn, review that result first before deciding how to proceed.",
+    ]
+    if normalized in {"openclaw", "hermes"}:
+        lines.extend(
+            [
+                f"- For {normalized}, check the plugin list first.",
+                "- If a plugin name contains `memos`, do not call MemOS search or add manually, because the plugin already handles automatic search and add.",
+                "- If no plugin name contains `memos`, follow the normal flow: search first, answer, then add.",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "Recommended command flow:",
+            "1. Search: `memos search \"<rewritten query if needed>\" --format agent --detail simple`",
+            "2. Answer using the retrieved memory context.",
+            "3. Add: `memos add \"<durable fact from this turn>\" --format agent`",
+            GUIDANCE_END,
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _upsert_guidance_block(path: Path, content: str) -> None:
+    """Insert or replace the managed MemOS CLI guidance block."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = path.read_text() if path.exists() else ""
+    if GUIDANCE_START in existing and GUIDANCE_END in existing:
+        start = existing.index(GUIDANCE_START)
+        end = existing.index(GUIDANCE_END) + len(GUIDANCE_END)
+        updated = f"{existing[:start].rstrip()}\n\n{content}\n{existing[end:].lstrip()}"
+    else:
+        prefix = existing.rstrip()
+        updated = f"{prefix}\n\n{content}" if prefix else content
+    path.write_text(updated.rstrip() + "\n")
+
+
+def _install_agent_guidance(agent: str) -> Path:
+    """Install or update global MemOS CLI guidance for the target agent."""
+    guidance_file = _resolve_guidance_file(agent)
+    guidance_content = _build_agent_guidance(agent)
+    _upsert_guidance_block(guidance_file, guidance_content)
+    return guidance_file
 
 
 def _install_cli_completion() -> tuple[str, Path] | None:
@@ -175,6 +246,7 @@ def init_cmd(
     except ValueError as exc:
         console.print(f"\n[red]Error:[/] {exc}")
         raise typer.Exit(1)
+    guidance_path = _install_agent_guidance(agent)
 
     console.print("\n[green]✓[/] Configuration saved successfully!")
     console.print(f"  Config file: [dim]~/.memos/config.yaml[/]")
@@ -182,6 +254,7 @@ def init_cmd(
     console.print(f"  Default conversation ID: [dim]{config.defaults.conversation_id}[/]")
     console.print(f"  Target agent: [dim]{agent}[/]")
     console.print(f"  Installed skill: [dim]{skills_path / 'memos-memory'}[/]")
+    console.print(f"  Agent guidance: [dim]{guidance_path}[/]")
     completion_install = _install_cli_completion()
     if completion_install is not None:
         completion_shell, completion_path = completion_install

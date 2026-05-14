@@ -11,6 +11,7 @@ from memos_cli.commands.memory_cmd import (
     cmd_extract,
     cmd_feedback,
     cmd_get,
+    cmd_origin,
     cmd_rerank,
     cmd_search,
 )
@@ -209,3 +210,12 @@ def delete(
 ):
     """Delete memories."""
     cmd_delete(memory_id=memory_id, user_id=user_id, output_format=output_format, detail=None)
+
+
+def origin(
+    memory_id: str | None = typer.Argument(None, help="Memory ID"),
+    output_format: str | None = typer.Option(None, "--format", help=FORMAT_HELP),
+    detail: str | None = typer.Option(None, "--detail", help=DETAIL_HELP),
+):
+    """Get the origin/source payload for a specific memory."""
+    cmd_origin(memory_id=memory_id, output_format=output_format, detail=detail)

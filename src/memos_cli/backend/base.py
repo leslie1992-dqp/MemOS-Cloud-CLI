@@ -87,6 +87,11 @@ class BackendBase(ABC):
     def get_memory(self, memory_id: str) -> dict[str, Any]:
         """Get a specific memory."""
         pass
+
+    @abstractmethod
+    def get_memory_origin(self, memory_id: str) -> dict[str, Any]:
+        """Get the origin/source payload for a specific memory."""
+        pass
     
     @abstractmethod
     def delete_memory(self, memory_ids: list[str], **kwargs) -> dict[str, Any]:

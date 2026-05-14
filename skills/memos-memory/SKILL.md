@@ -9,7 +9,7 @@ Use this skill when:
 - the task may depend on prior user, project, or conversation context;
 - the user provides a stable new fact, preference, or background detail;
 - you want to preview extracted memory candidates before storing them;
-- you need to inspect, list, or delete an existing memory record.
+- you need to inspect, list, delete, or trace the source of an existing memory record.
 
 Never store:
 - secrets, API keys, tokens, or passwords;
@@ -23,6 +23,7 @@ Use these commands:
 - `memos search "<query>" --user-id <USER_ID> --format agent --detail simple`
 - `memos chat "<message>" --user-id <USER_ID> --format agent`
 - `memos get <USER_ID> --format json --detail detail`
+- `memos origin <MEMORY_ID> --format json`
 - `memos delete <MEMORY_ID> --format json`
 
 Choose commands by intent:
@@ -31,6 +32,7 @@ Choose commands by intent:
 - use [`./references/memos-search.md`](./references/memos-search.md) before answering when historical context may matter;
 - use [`./references/memos-chat.md`](./references/memos-chat.md) when interacting with MemOS chat capability directly;
 - use [`./references/memos-get.md`](./references/memos-get.md) for retrieval by `user_id`;
+- use [`./references/memos-origin.md`](./references/memos-origin.md) when you need the original source messages behind a specific memory;
 - use [`./references/memos-delete.md`](./references/memos-delete.md) only when you already have a concrete `memory_id`.
 
 Working rules:
@@ -64,5 +66,6 @@ memos add "User is allergic to peanuts" --user-id <USER_ID> --format json
 
 ```bash
 memos get <USER_ID> --format json --detail detail
+memos origin <MEMORY_ID> --format json
 memos delete <MEMORY_ID> --format json
 ```

@@ -10,7 +10,7 @@ from memos_cli import __version__
 from memos_cli.completion import register_completion_compat
 from memos_cli.commands.init import init_cmd
 from memos_cli.commands.config_cmd import config_app
-from memos_cli.commands.memory import add, extract, feedback, rerank, search, chat, get, delete
+from memos_cli.commands.memory import add, extract, feedback, rerank, search, chat, get, delete, origin
 from memos_cli.state import set_runtime_options
 console = Console()
 err_console = Console(stderr=True)
@@ -27,6 +27,7 @@ class CommandFirstTyperGroup(TyperGroup):
         "add",
         "search",
         "get",
+        "origin",
         "delete",
         "extract",
         "rerank",
@@ -124,6 +125,7 @@ app.command(rich_help_panel="Memory Operations")(extract)
 app.command(rich_help_panel="Memory Operations")(feedback)
 app.command(rich_help_panel="Memory Operations")(search)
 app.command(rich_help_panel="Memory Operations")(get)
+app.command(rich_help_panel="Memory Operations")(origin)
 app.command(rich_help_panel="Memory Operations")(delete)
 
 # Advanced commands (P1)

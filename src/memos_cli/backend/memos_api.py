@@ -80,6 +80,10 @@ class MemOSBackend(BackendBase):
         """Get a specific memory."""
         return self.memory_api.get_memory(memory_id, **kwargs)
 
+    def get_memory_origin(self, memory_id: str, **kwargs: Any) -> dict[str, Any]:
+        """Get origin/source payload for a specific memory."""
+        return self.memory_api.get_memory_origin(memory_id, **kwargs)
+
     def delete_memory(self, memory_ids: list[str], **kwargs: Any) -> dict[str, Any]:
         """Delete memories."""
         return self.memory_api.delete_memory(memory_ids, **kwargs)
