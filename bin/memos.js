@@ -2,9 +2,9 @@
 
 "use strict";
 
-const { spawn } = require("node:child_process");
-const { existsSync } = require("node:fs");
-const path = require("node:path");
+const { spawn } = require("child_process");
+const { existsSync } = require("fs");
+const path = require("path");
 
 const exeName = process.platform === "win32" ? "memos.exe" : "memos";
 const binaryPath = path.join(__dirname, "..", "bin", exeName);
@@ -24,7 +24,7 @@ child.on("exit", (code, signal) => {
     process.kill(process.pid, signal);
     return;
   }
-  process.exit(code ?? 1);
+  process.exit(typeof code === "number" ? code : 1);
 });
 
 child.on("error", (error) => {

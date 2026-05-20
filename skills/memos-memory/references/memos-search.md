@@ -1,5 +1,9 @@
 # `memos search`
 
+Intent map:
+- retrieve context before answering -> `memos search`
+- do not use `--help` first when the goal is already retrieval
+
 Use this command when:
 - the current answer may depend on prior user, project, or conversation context;
 - you need semantic retrieval rather than simple browsing;
@@ -38,4 +42,5 @@ memos search "restaurants food preferences" --user-id user_123 --format agent --
 Working rules:
 - use compressed keywords instead of raw long-form dialogue;
 - prioritize user preferences, entities, and topic terms in the query;
-- pass `--user-id` when user scope matters.
+- pass `--user-id` when user scope matters;
+- do not prepend `memos --help` when `search` is the already known goal.

@@ -53,16 +53,16 @@ npm install -g @memtensor/memos-cloud-cli@beta
 
 The npm package downloads a prebuilt MemOS CLI binary for the current platform during installation, so end users do not need a local Python environment.
 
-## Uninstall
-
-```bash
-npm uninstall -g @memtensor/memos-cloud-cli
-```
-
 ### Development
 
 ```bash
 pip install -e .
+```
+
+## Uninstall
+
+```bash
+npm uninstall -g @memtensor/memos-cloud-cli
 ```
 
 ## Quick Start

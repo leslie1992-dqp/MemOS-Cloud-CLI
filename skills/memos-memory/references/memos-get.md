@@ -1,7 +1,11 @@
 # `memos get`
 
+Intent map:
+- fetch memories by `user_id` -> `memos get`
+- do not use `--help` first when the goal is already to fetch scoped records
+
 Use this command when:
-- you need retrieval for a specific `user_id`;
+- you need retrieval by a specific `user_id`;
 - you want to inspect returned memory records in detail;
 - you want raw official JSON from the documented `get_memory` API.
 
@@ -33,3 +37,7 @@ Example:
 ```bash
 memos get user_123 --format json --detail detail
 ```
+
+Working rules:
+- `get` returns scoped records for the requested `user_id`;
+- do not prepend `memos --help` when `get` is the already known goal.

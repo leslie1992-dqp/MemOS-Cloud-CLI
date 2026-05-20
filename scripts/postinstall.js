@@ -2,11 +2,11 @@
 
 "use strict";
 
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
-const https = require("node:https");
-const { spawn } = require("node:child_process");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const https = require("https");
+const { spawn } = require("child_process");
 
 const pkg = require("../package.json");
 

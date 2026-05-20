@@ -1,5 +1,10 @@
 # `memos extract`
 
+Intent map:
+- preview candidate memories before storing -> `memos extract`
+- do not use `--help` first when the goal is already a preview
+- do not use `extract` as a substitute for `add`
+
 Use this command when:
 - you want to preview memory candidates without storing them;
 - the user asks what MemOS would extract from a message;
@@ -31,3 +36,4 @@ memos extract "User likes coffee and prefers dark mode" --user-id user_123 --for
 Working rules:
 - `extract` previews candidate memories and does not write them;
 - for multi-turn input, compress into core facts before calling the command.
+- do not prepend `memos --help` when `extract` is the already known goal.
