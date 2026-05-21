@@ -31,7 +31,6 @@ Intent map:
 - Do not chain extra memory-tool calls in the same turn when the current answer can already be given.
 - The default order is: search first when needed, answer second, add last.
 - never normalize or shorten a scoped `user_id`; pass the exact configured value through unchanged.
-{{plugin_rules}}
 
 Recommended command flow:
 1. Search: `memos search "<rewritten query if needed>" --format agent --detail simple`
