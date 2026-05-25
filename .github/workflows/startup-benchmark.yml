@@ -83,7 +83,7 @@ jobs:
           @(
             "# startup benchmark: ${{ matrix.os }}"
             ""
-            "- package: `$env:PACKAGE_SPEC`"
+            "- package: $env:PACKAGE_SPEC"
             "- runs: $runs"
             "- average_seconds: $average"
             "- min_seconds: $minimum"
@@ -94,7 +94,7 @@ jobs:
           ) | Set-Content $summaryPath
 
           foreach ($row in $rows) {
-            "| $($row.Run) | $($row.Seconds) | `$($row.Output)` |" | Add-Content $summaryPath
+            "| $($row.Run) | $($row.Seconds) | $($row.Output) |" | Add-Content $summaryPath
           }
 
           Get-Content $summaryPath | ForEach-Object { Add-Content $env:GITHUB_STEP_SUMMARY $_ }
