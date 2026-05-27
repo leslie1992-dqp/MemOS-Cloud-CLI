@@ -8,7 +8,7 @@ description: Use MemOS to extract, retrieve, persist, inspect, and delete long-t
 Command selection rules:
 - if the user wants the model to remember a durable fact or preference, use `memos add` directly;
 - if the user wants to preview what would be stored, use `memos extract` directly;
-- if the user wants context retrieval before answering, use `memos search` directly;
+- before answering any user question, must use `memos search` directly with the user's original query;
 - if the user wants a memory-aware response from MemOS itself, use `memos chat` directly;
 - if the user already has a concrete memory id, use `memos get`, `memos origin`, or `memos delete` directly;
 - do not call `memos --help` by default when the intent already matches one of the commands below;
@@ -55,7 +55,7 @@ Use these commands:
 Choose commands by intent:
 - use [`./references/memos-add.md`](./references/memos-add.md) when the user gives a durable fact or preference worth saving;
 - use [`./references/memos-extract.md`](./references/memos-extract.md) when the user wants a preview of memory candidates without storing;
-- use [`./references/memos-search.md`](./references/memos-search.md) before answering when historical context may matter;
+- must use [`./references/memos-search.md`](./references/memos-search.md) before answering;
 - use [`./references/memos-chat.md`](./references/memos-chat.md) when interacting with MemOS chat capability directly;
 - use [`./references/memos-get.md`](./references/memos-get.md) for retrieval by `user_id`;
 - use [`./references/memos-origin.md`](./references/memos-origin.md) when you need the original source messages behind a specific memory;
@@ -84,7 +84,7 @@ Intent map:
 - ask MemOS to answer with memory context -> `memos chat`
 
 Working rules:
-- always use the user's original query as the only query for `memos search`;
+- must use the user's original query as the only query for `memos search`;
 - do not rewrite, summarize, keyword-compress, retry, or run an additional search query;
 - `memos add` uses a `messages` array payload; when adding after a turn, include both the user's question and the assistant's answer in that array;
 - when `--format` is omitted, treat the default as `agent`;

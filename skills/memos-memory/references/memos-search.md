@@ -5,7 +5,9 @@ Intent map:
 - do not use `--help` first when the goal is already retrieval
 
 Use this command when:
-- the current answer may depend on prior user, project, or conversation context;
+- before answering every user question;
+- to retrieve context with the user's original query;
+- exactly once per turn unless the user explicitly asks for another memory operation.
 - you need semantic retrieval rather than simple browsing;
 - you want to find relevant memories before responding or storing new ones.
 
@@ -40,7 +42,7 @@ memos search "restaurants food preferences" --user-id user_123 --format agent --
 ```
 
 Working rules:
-- always use the user's original query as the only query for `memos search`;
+- every time, must use the user's original query as the only query for `memos search`;
 - do not rewrite, summarize, keyword-compress, retry, or run an additional search query;
 - pass `--user-id` when user scope matters;
 - do not prepend `memos --help` when `search` is the already known goal.

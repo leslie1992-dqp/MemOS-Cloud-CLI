@@ -6,13 +6,12 @@ Rules:
 - if the intent is already clear, call the matching MemOS command directly instead of starting with `--help`;
 - use `--help` only when the command name, parameters, or route are genuinely unclear;
 - if the user explicitly asks to remember, save, or store messages, go directly to `memos add` and do not check config first;
-- when the current scenario may need memory context, run `memos search` once before answering and use the user's original query as the only search query;
+- must run `memos search` once before answering in every scenario, using the user's original query as the only search query;
 - do not rewrite, summarize, keyword-compress, retry, or run an additional search query;
-- if memory context is not needed for the current scenario, answer directly without a search;
 - after each task or turn is complete, run `memos add` with both the user's question and the assistant's final answer.
 
 Command guide:
-- `memos search`: always retrieve context with the user's original query.
+- `memos search`: must retrieve context with the user's original query.
   - Example: `memos search "user preferences" --format agent --detail simple`
 - `memos add`: store the user's question and the assistant's final answer after replying.
   - Example: `memos add "User prefers dark mode" --format json`
@@ -37,9 +36,9 @@ Command guide:
 - Use `memos origin` only when a concrete memory ID is available and you need the source text behind that memory.
 - `memos add` sends a `messages` array payload; when adding after a turn, include both the user's question and the assistant's final answer.
 - Add after every completed task or answer, even when no search was needed or search returned no useful memories; treat `add` as the ingestion step where the extractor filters what is worth keeping.
-- Per turn, use at most 1 original-query `search` call and at most 1 `add` call unless the user explicitly asks for a different memory operation.
+- Per turn, must use at most 1 original-query `search` call and at most 1 `add` call unless the user explicitly asks for a different memory operation.
 - Do not chain extra memory-tool calls in the same turn when the current answer can already be given.
-- The default order when memory may matter is: original-query search first, answer second, add last.
+- The required order is: original-query search first, answer second, add last.
 - never normalize or shorten a scoped `user_id`; pass the exact configured value through unchanged.
 
 Bootstrap rule:
