@@ -5,15 +5,14 @@ Use MemOS CLI in every conversation.
 Rules:
 - if the intent is already clear, call the matching MemOS command directly instead of starting with `--help`;
 - use `--help` only when the command name, parameters, or route are genuinely unclear;
-- if the user explicitly asks to remember, save, or store messages, go directly to `memos add` and do not check config first;
-- must run `memos search` once before answering in every scenario, using the user's original query as the only search query;
+- must run `memos search` once before answering in every scenario, even in scenarios that do not require context or are purely for adding memory, using the user's original query as the only search query;
 - do not rewrite, summarize, keyword-compress, retry, or run an additional search query;
-- after each task or turn is complete, run `memos add` with both the user's question and the assistant's final answer.
+- after each task or turn is complete, must run `memos add` with both the user's question and the assistant's final answer.
 
 Command guide:
 - `memos search`: must retrieve context with the user's original query.
   - Example: `memos search "user preferences" --format agent --detail simple`
-- `memos add`: store the user's question and the assistant's final answer after replying.
+- `memos add`: must store the user's question and the assistant's final answer after replying.
   - Example: `memos add "User prefers dark mode" --format json`
 - `memos extract`: preview what would be stored.
   - Example: `memos extract "User prefers dark mode" --format json`
@@ -35,7 +34,7 @@ Command guide:
 - After the original-query search, answer with the available memory context; if results are insufficient, ambiguous, or partial, do not run an additional search.
 - Use `memos origin` only when a concrete memory ID is available and you need the source text behind that memory.
 - `memos add` sends a `messages` array payload; when adding after a turn, include both the user's question and the assistant's final answer.
-- Add after every completed task or answer, even when no search was needed or search returned no useful memories; treat `add` as the ingestion step where the extractor filters what is worth keeping.
+- Must add after every completed task or answer, even when no search was needed or search returned no useful memories; treat `add` as the ingestion step where the extractor filters what is worth keeping.
 - Per turn, must use at most 1 original-query `search` call and at most 1 `add` call unless the user explicitly asks for a different memory operation.
 - Do not chain extra memory-tool calls in the same turn when the current answer can already be given.
 - The required order is: original-query search first, answer second, add last.

@@ -6,9 +6,9 @@ description: Use MemOS to extract, retrieve, persist, inspect, and delete long-t
 # MemOS Memory Protocol
 
 Command selection rules:
-- if the user wants the model to remember a durable fact or preference, use `memos add` directly;
 - if the user wants to preview what would be stored, use `memos extract` directly;
 - before answering any user question, must use `memos search` directly with the user's original query;
+- after answering any user question, must use `memos add` directly with both the user's question and the assistant's final answer;
 - if the user wants a memory-aware response from MemOS itself, use `memos chat` directly;
 - if the user already has a concrete memory id, use `memos get`, `memos origin`, or `memos delete` directly;
 - do not call `memos --help` by default when the intent already matches one of the commands below;
@@ -63,15 +63,15 @@ Choose commands by intent:
 
 Process rules:
 - the default workflow is: search before answering, answer second, then add after answering;
-- when you add after answering, pass both the user's question and the assistant's final answer into `memos add` so the extractor can decide what is worth keeping;
-- do not skip `add` just because the current turn does not obviously contain a durable fact;
+- when you add after answering, must pass both the user's question and the assistant's final answer into `memos add` so the extractor can decide what is worth keeping;
+- must not skip `add` just because the current turn does not obviously contain a durable fact;
 - per turn, keep memory-tool usage bounded: at most 1 original-query `search` call and at most 1 `add` call after answering;
 - do not chain additional memory tools in the same turn unless the user explicitly asks for that specific operation;
 - `extract` is only for previewing candidates, not for storing;
 - `feedback` is a separate command and should only be used when the user explicitly wants feedback storage;
-- if the user’s message is already a memory write request, prefer `add` over `feedback` or `extract`.
+<!-- - if the user’s message is already a memory write request, prefer `add` over `feedback` or `extract`. -->
 - do not start a memory-write request by checking config or running `memos init`;
-- if the user says "remember these messages", "save these messages", or equivalent, go directly to `memos add` with the exact configured `user_id`.
+<!-- - if the user says "remember these messages", "save these messages", or equivalent, go directly to `memos add` with the exact configured `user_id`. -->
 
 Intent map:
 - preview what would be stored -> `memos extract`

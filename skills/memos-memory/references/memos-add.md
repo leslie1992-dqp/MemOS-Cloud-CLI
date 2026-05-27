@@ -7,7 +7,8 @@ Intent map:
 - use `add` instead of `extract` or `feedback` when the user is directly asking to remember something
 
 Use this command when:
-- the user states a durable preference, fact, or background detail;
+- after answering every user question;
+- when the user explicitly asks to remember, save, or store something;
 - the conversation produces a memory likely to help future turns;
 - you already know the memory should be stored, not just previewed.
 
