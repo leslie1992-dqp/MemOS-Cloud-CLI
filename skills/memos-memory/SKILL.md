@@ -1,6 +1,6 @@
 ---
-name: memos-memory
-description: Use MemOS to extract, retrieve, persist, inspect, and delete long-term memory for user, project, and task context.
+name: MemOS Memory
+description: Provide universal memory capabilities for different AI agents and development frameworks, unifying the capture, retrieval, and management of user, project, and task context.
 ---
 
 # MemOS Memory Protocol
