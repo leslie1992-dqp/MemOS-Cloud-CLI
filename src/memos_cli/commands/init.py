@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import shutil
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import typer
@@ -31,12 +32,31 @@ DEFAULT_BASE_URL = "https://memos.memtensor.cn/api/openmem/v1"
 GUIDANCE_START = "<!-- MEMOS_CLI:START -->"
 GUIDANCE_END = "<!-- MEMOS_CLI:END -->"
 
-SUPPORTED_SKILL_AGENTS = {
-    "codex": Path.home() / ".codex" / "skills",
-    "cursor": Path.home() / ".cursor" / "skills",
-    "claude": Path.home() / ".claude" / "skills",
-    "openclaw": Path.home() / ".openclaw" / "skills",
-    "hermes": Path.home() / ".hermes" / "skills",
+@dataclass(frozen=True)
+class AgentConfig:
+    """Declarative configuration for a supported agent."""
+
+    skills_dir: Path
+    guidance_file: str
+    guidance_home: Path | None = None
+    guidance_mode: str = "upsert"  # "upsert" | "standalone"
+
+
+AGENT_REGISTRY: dict[str, AgentConfig] = {
+    "codex":       AgentConfig(Path.home() / ".codex" / "skills",                    "AGENTS.md"),
+    "cursor":      AgentConfig(Path.home() / ".cursor" / "skills",                   "AGENTS.md"),
+    "claude":      AgentConfig(Path.home() / ".claude" / "skills",                   "CLAUDE.md"),
+    "openclaw":    AgentConfig(Path.home() / ".openclaw" / "skills",                 "AGENTS.md"),
+    "hermes":      AgentConfig(Path.home() / ".hermes" / "skills",                   "AGENTS.md"),
+    "trae":        AgentConfig(Path.home() / ".trae" / "skills",                     "memos.md",
+                               Path.home() / ".trae" / "rules", "standalone"),
+    "trae-cn":     AgentConfig(Path.home() / ".trae-cn" / "skills",                  "memos.md",
+                               Path.home() / ".trae-cn" / "rules", "standalone"),
+    "opencode":    AgentConfig(Path.home() / ".config" / "opencode" / "skills",      "AGENTS.md"),
+    "antigravity": AgentConfig(Path.home() / ".gemini" / "antigravity" / "skills",   "GEMINI.md", Path.home() / ".gemini"),
+    "workbuddy":   AgentConfig(Path.home() / ".codebuddy" / "skills",                "CODEBUDDY.md"),
+    "cline":       AgentConfig(Path.home() / ".cline" / "skills",                    "AGENTS.md", Path.home() / ".agents"),
+    "copilot":     AgentConfig(Path.home() / ".copilot" / "skills",                  "copilot-instructions.md"),
 }
 
 
@@ -73,11 +93,11 @@ def _resolve_skills_dir(agent: str) -> Path:
         if codex_home:
             return Path(codex_home).expanduser() / "skills"
 
-    target = SUPPORTED_SKILL_AGENTS.get(normalized)
-    if target is None:
-        valid = ", ".join(sorted(SUPPORTED_SKILL_AGENTS))
+    cfg = AGENT_REGISTRY.get(normalized)
+    if cfg is None:
+        valid = ", ".join(sorted(AGENT_REGISTRY))
         raise ValueError(f"Unsupported --agent: {agent}. Valid values: {valid}")
-    return target
+    return cfg.skills_dir
 
 
 def _install_bundled_skills(agent: str) -> Path:
@@ -121,11 +141,9 @@ def _resolve_guidance_files(agent: str) -> list[Path]:
     if normalized == "openclaw":
         return _resolve_openclaw_guidance_files()
 
-    skills_root = _resolve_skills_dir(agent)
-    agent_home = skills_root.parent
-    if normalized == "claude":
-        return [agent_home / "CLAUDE.md"]
-    return [agent_home / "AGENTS.md"]
+    cfg = AGENT_REGISTRY[normalized]
+    home = cfg.guidance_home if cfg.guidance_home else cfg.skills_dir.parent
+    return [home / cfg.guidance_file]
 
 
 def _resolve_openclaw_guidance_files() -> list[Path]:
@@ -172,12 +190,47 @@ def _upsert_guidance_block(path: Path, content: str) -> None:
     path.write_text(updated.rstrip() + "\n", encoding="utf-8")
 
 
+def _write_standalone_guidance(path: Path, content: str) -> None:
+    """Write a standalone guidance file fully managed by MemOS."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+STANDALONE_FRONTMATTER = """\
+---
+description: MemOS memory management - search and store context for every conversation
+alwaysApply: true
+---
+
+"""
+
+
+def _build_standalone_guidance(agent: str, *, memos_plugin: bool = False) -> str:
+    """Build standalone guidance with frontmatter (for Trae rules format)."""
+    template = _guidance_template_path().read_text(encoding="utf-8")
+    if memos_plugin:
+        start = template.find("## MemOS Plugin Mode")
+        content = template[start:].rstrip() if start != -1 else template.rstrip()
+    else:
+        plugin_start = template.find("## MemOS Plugin Mode")
+        content = template[:plugin_start].rstrip() if plugin_start != -1 else template.rstrip()
+    return f"{STANDALONE_FRONTMATTER}{content}\n"
+
+
 def _install_agent_guidance(agent: str, *, memos_plugin: bool = False) -> list[Path]:
     """Install or update global MemOS CLI guidance for the target agent."""
+    normalized = agent.strip().lower()
+    cfg = AGENT_REGISTRY[normalized]
     guidance_files = _resolve_guidance_files(agent)
-    guidance_content = _build_plugin_agent_guidance(agent) if memos_plugin else _build_agent_guidance(agent)
-    for guidance_file in guidance_files:
-        _upsert_guidance_block(guidance_file, guidance_content)
+
+    if cfg.guidance_mode == "standalone":
+        content = _build_standalone_guidance(agent, memos_plugin=memos_plugin)
+        for guidance_file in guidance_files:
+            _write_standalone_guidance(guidance_file, content)
+    else:
+        content = _build_plugin_agent_guidance(agent) if memos_plugin else _build_agent_guidance(agent)
+        for guidance_file in guidance_files:
+            _upsert_guidance_block(guidance_file, content)
     return guidance_files
 
 
@@ -212,17 +265,17 @@ def init_cmd(
     agent: str | None = typer.Option(
         None,
         "--agent",
-        help="Install skill for target agent: codex, cursor, claude, openclaw, or hermes.",
+        help=f"Install skill for target agent: {', '.join(sorted(AGENT_REGISTRY))}.",
     ),
 ):
     """Initialize MemOS CLI and install bundled skills to an explicit agent skills directory."""
     console.print("[bold blue]◆ MemOS CLI Initialization[/]\n")
 
     if not agent:
+        valid = ", ".join(sorted(AGENT_REGISTRY))
         console.print(
-            "[red]Error:[/] --agent is required. "
-            "Skill installation target must be specified explicitly "
-            "(codex, cursor, claude, openclaw, or hermes)."
+            f"[red]Error:[/] --agent is required. "
+            f"Skill installation target must be specified explicitly ({valid})."
         )
         raise typer.Exit(1)
 
@@ -234,6 +287,9 @@ def init_cmd(
 
     # Get API key
     if not api_key:
+        console.print(
+            "[dim]Get your API key at:[/] https://memos-dashboard.openmem.net/cn/apikeys/\n"
+        )
         api_key = Prompt.ask(
             "[bold]Enter your MemOS API key[/]",
             password=True,
