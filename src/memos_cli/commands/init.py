@@ -59,6 +59,15 @@ AGENT_REGISTRY: dict[str, AgentConfig] = {
     "copilot":     AgentConfig(Path.home() / ".copilot" / "skills",                  "copilot-instructions.md"),
 }
 
+SUPPORTED_SKILL_AGENTS: dict[str, Path] = {
+    agent: config.skills_dir for agent, config in AGENT_REGISTRY.items()
+}
+
+
+def _valid_agent_names() -> list[str]:
+    """Return all supported agent names, including legacy mapping overrides."""
+    return sorted({*AGENT_REGISTRY, *SUPPORTED_SKILL_AGENTS})
+
 
 def _bundle_root() -> Path:
     """Return the runtime bundle root for source and PyInstaller builds."""
@@ -94,10 +103,11 @@ def _resolve_skills_dir(agent: str) -> Path:
             return Path(codex_home).expanduser() / "skills"
 
     cfg = AGENT_REGISTRY.get(normalized)
-    if cfg is None:
-        valid = ", ".join(sorted(AGENT_REGISTRY))
+    target = SUPPORTED_SKILL_AGENTS.get(normalized)
+    if target is None and cfg is None:
+        valid = ", ".join(_valid_agent_names())
         raise ValueError(f"Unsupported --agent: {agent}. Valid values: {valid}")
-    return cfg.skills_dir
+    return target if target is not None else cfg.skills_dir
 
 
 def _install_bundled_skills(agent: str) -> Path:
@@ -141,9 +151,11 @@ def _resolve_guidance_files(agent: str) -> list[Path]:
     if normalized == "openclaw":
         return _resolve_openclaw_guidance_files()
 
-    cfg = AGENT_REGISTRY[normalized]
-    home = cfg.guidance_home if cfg.guidance_home else cfg.skills_dir.parent
-    return [home / cfg.guidance_file]
+    cfg = AGENT_REGISTRY.get(normalized)
+    skills_dir = _resolve_skills_dir(agent)
+    guidance_file = cfg.guidance_file if cfg else "AGENTS.md"
+    home = cfg.guidance_home if cfg and cfg.guidance_home else skills_dir.parent
+    return [home / guidance_file]
 
 
 def _resolve_openclaw_guidance_files() -> list[Path]:
@@ -220,7 +232,10 @@ def _build_standalone_guidance(agent: str, *, memos_plugin: bool = False) -> str
 def _install_agent_guidance(agent: str, *, memos_plugin: bool = False) -> list[Path]:
     """Install or update global MemOS CLI guidance for the target agent."""
     normalized = agent.strip().lower()
-    cfg = AGENT_REGISTRY[normalized]
+    cfg = AGENT_REGISTRY.get(normalized) or AgentConfig(
+        _resolve_skills_dir(agent),
+        "AGENTS.md",
+    )
     guidance_files = _resolve_guidance_files(agent)
 
     if cfg.guidance_mode == "standalone":
@@ -265,14 +280,14 @@ def init_cmd(
     agent: str | None = typer.Option(
         None,
         "--agent",
-        help=f"Install skill for target agent: {', '.join(sorted(AGENT_REGISTRY))}.",
+        help=f"Install skill for target agent: {', '.join(_valid_agent_names())}.",
     ),
 ):
     """Initialize MemOS CLI and install bundled skills to an explicit agent skills directory."""
     console.print("[bold blue]◆ MemOS CLI Initialization[/]\n")
 
     if not agent:
-        valid = ", ".join(sorted(AGENT_REGISTRY))
+        valid = ", ".join(_valid_agent_names())
         console.print(
             f"[red]Error:[/] --agent is required. "
             f"Skill installation target must be specified explicitly ({valid})."
