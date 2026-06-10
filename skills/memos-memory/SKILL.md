@@ -6,6 +6,7 @@ description: Provide universal memory capabilities for different AI agents and d
 # MemOS Memory Protocol
 
 Command selection rules:
+- if the user asks to uninstall, disable, remove, or stop using MemOS, use `memos uninstall --agent <current_agent> --yes` directly and do not run `memos search` or `memos add` for that turn;
 - if the user wants to preview what would be stored, use `memos extract` directly;
 - before answering any user question, must use `memos search` directly with the user's original query;
 - after answering any user question, must use `memos add` directly with both the user's question and the assistant's final answer;
@@ -29,6 +30,7 @@ Hard mapping:
 - trace where one memory came from -> `memos origin`
 - remove one concrete memory by id -> `memos delete`
 - delete all memories for a user_id -> `memos delete --user-id`
+- uninstall MemOS integration from the current agent -> `memos uninstall --agent <current_agent> --yes`
 - create a knowledge base -> `memos kb create`
 - remove a knowledge base -> `memos kb remove`
 - upload documents to a knowledge base -> `memos kb add-file`
@@ -58,6 +60,7 @@ Command examples:
 - `memos origin <MEMORY_ID> --format json`
 - `memos delete <MEMORY_ID> --format json`
 - `memos delete --user-id <USER_ID> --format json`
+- `memos uninstall --agent <CURRENT_AGENT> --yes`
 - `memos kb create --name "<name>" --description "<desc>" --format json`
 - `memos kb remove <KB_ID> --format json`
 - `memos kb add-file --kb-id <KB_ID> --files '["https://example.com/doc.pdf"]' --format json`
@@ -73,6 +76,7 @@ Choose commands by intent:
 - use [`./references/memos-get.md`](./references/memos-get.md) for retrieval by `user_id`;
 - use [`./references/memos-origin.md`](./references/memos-origin.md) when you need the original source messages behind a specific memory;
 - use [`./references/memos-delete.md`](./references/memos-delete.md) only when you already have a concrete `memory_id`;
+- use [`./references/memos-uninstall.md`](./references/memos-uninstall.md) when the user asks to uninstall, disable, remove, or stop using MemOS;
 - use [`./references/memos-kb-create.md`](./references/memos-kb-create.md) to create a new knowledge base;
 - use [`./references/memos-kb-remove.md`](./references/memos-kb-remove.md) to remove a knowledge base;
 - use [`./references/memos-kb-add-file.md`](./references/memos-kb-add-file.md) to upload documents to a knowledge base;
@@ -99,6 +103,7 @@ Intent map:
 - delete one concrete memory -> `memos delete`
 - delete all memories for a `user_id` -> `memos delete --user-id`
 - ask MemOS to answer with memory context -> `memos chat`
+- uninstall MemOS integration from the current agent -> `memos uninstall --agent <current_agent> --yes`
 - create a knowledge base -> `memos kb create`
 - remove a knowledge base -> `memos kb remove`
 - upload documents to a knowledge base -> `memos kb add-file`
@@ -117,6 +122,7 @@ Working rules:
 - append `--format agent` at the end of the command when the result will be injected back into model context;
 - keep `--format` at the end of every command line, and keep `--detail` at the end only for `search` and `get`;
 - do not run `memos init` as a default preflight step if MemOS CLI is already installed;
+- do not run `memos search` or `memos add` in a turn where the user is asking to uninstall, disable, remove, or stop using MemOS;
 - only run `memos init --agent <current_agent>` when the CLI is missing and the user has explicitly provided an API key or asked to initialize MemOS;
 - if initialization is needed but no API key is available, ask the user for the key instead of stopping the workflow;
 - the active agent should initialize itself with its own `--agent` value, not a hardcoded different agent name;
@@ -147,6 +153,10 @@ memos add "User is allergic to peanuts" --user-id <USER_ID> --format json
 memos get <USER_ID> --format json --detail detail
 memos origin <MEMORY_ID> --format json
 memos delete <MEMORY_ID> --format json
+```
+
+```bash
+memos uninstall --agent codex --yes
 ```
 
 ```bash

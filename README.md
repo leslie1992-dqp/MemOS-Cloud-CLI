@@ -40,6 +40,7 @@ MemOS-CLI/
 │           ├── memos-get.md
 │           ├── memos-origin.md
 │           ├── memos-search.md
+│           ├── memos-uninstall.md
 │           ├── memos-kb-create.md
 │           ├── memos-kb-remove.md
 │           ├── memos-kb-add-file.md
@@ -76,8 +77,13 @@ pip install -e .
 ## Uninstall
 
 ```bash
+memos uninstall --agent codex --yes
 npm uninstall -g @memtensor/memos-cloud-cli
 ```
+
+Run `memos uninstall --agent <agent> --yes` before removing the npm package. It removes the installed MemOS skill and cleans the managed MemOS block from agent guidance files such as `AGENTS.md` or `CLAUDE.md`; `npm uninstall` only removes the global binary.
+
+See `skills/memos-memory/references/memos-uninstall.md` for the agent-facing uninstall workflow.
 
 ## Quick Start
 
@@ -501,6 +507,7 @@ Use the provided skill to enable memory operations in your agent framework.
 
 Use this skill when:
 - you need memory operations such as `extract`, `add`, `search`, `chat`, `get`, and `delete`: `skills/memos-memory/SKILL.md`
+- you need to remove the MemOS skill and managed agent guidance: `skills/memos-memory/references/memos-uninstall.md`
 
 Recommended entry point:
 1. Start with `skills/memos-memory/SKILL.md`.
