@@ -19,6 +19,8 @@ except ImportError:
         raise RuntimeError("Shell detection is unavailable in this Typer version")
 
 from memos_cli.config import (
+    CONFIG_DIR,
+    CONFIG_FILE,
     DEFAULT_CONVERSATION_ID,
     DEFAULT_USER_ID,
     MemOSConfig,
@@ -132,6 +134,24 @@ def _install_bundled_skills(agent: str) -> Path:
     return memos_target
 
 
+def _remove_bundled_skills(agent: str) -> list[Path]:
+    """Remove bundled MemOS operation skill from the global skills directory."""
+    target_root = _resolve_skills_dir(agent) / "memos"
+    destination = target_root / "memos-memory"
+    removed: list[Path] = []
+
+    if destination.exists():
+        shutil.rmtree(destination)
+        removed.append(destination)
+
+    try:
+        target_root.rmdir()
+    except OSError:
+        pass
+
+    return removed
+
+
 def _guidance_template_path() -> Path:
     """Return the bundled AGENTS/CLAUDE guidance template path."""
     meipass = getattr(sys, "_MEIPASS", None)
@@ -202,6 +222,26 @@ def _upsert_guidance_block(path: Path, content: str) -> None:
     path.write_text(updated.rstrip() + "\n", encoding="utf-8")
 
 
+def _remove_guidance_block(path: Path) -> bool:
+    """Remove the managed MemOS CLI guidance block from a guidance file."""
+    if not path.exists():
+        return False
+
+    existing = path.read_text(encoding="utf-8")
+    if GUIDANCE_START not in existing or GUIDANCE_END not in existing:
+        return False
+
+    start = existing.index(GUIDANCE_START)
+    end = existing.index(GUIDANCE_END) + len(GUIDANCE_END)
+    updated = f"{existing[:start].rstrip()}\n\n{existing[end:].lstrip()}".strip()
+
+    if updated:
+        path.write_text(updated + "\n", encoding="utf-8")
+    else:
+        path.unlink()
+    return True
+
+
 def _write_standalone_guidance(path: Path, content: str) -> None:
     """Write a standalone guidance file fully managed by MemOS."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -229,6 +269,17 @@ def _build_standalone_guidance(agent: str, *, memos_plugin: bool = False) -> str
     return f"{STANDALONE_FRONTMATTER}{content}\n"
 
 
+def _remove_standalone_guidance(path: Path) -> bool:
+    """Remove a standalone guidance file when it is MemOS-managed."""
+    if not path.exists():
+        return False
+    content = path.read_text(encoding="utf-8")
+    if not content.startswith(STANDALONE_FRONTMATTER):
+        return False
+    path.unlink()
+    return True
+
+
 def _install_agent_guidance(agent: str, *, memos_plugin: bool = False) -> list[Path]:
     """Install or update global MemOS CLI guidance for the target agent."""
     normalized = agent.strip().lower()
@@ -247,6 +298,38 @@ def _install_agent_guidance(agent: str, *, memos_plugin: bool = False) -> list[P
         for guidance_file in guidance_files:
             _upsert_guidance_block(guidance_file, content)
     return guidance_files
+
+
+def _uninstall_agent_guidance(agent: str) -> list[Path]:
+    """Remove MemOS CLI guidance from all known guidance files for the target agent."""
+    normalized = agent.strip().lower()
+    cfg = AGENT_REGISTRY.get(normalized) or AgentConfig(
+        _resolve_skills_dir(agent),
+        "AGENTS.md",
+    )
+    removed: list[Path] = []
+
+    for guidance_file in _resolve_guidance_files(agent):
+        if cfg.guidance_mode == "standalone":
+            changed = _remove_standalone_guidance(guidance_file)
+        else:
+            changed = _remove_guidance_block(guidance_file)
+        if changed:
+            removed.append(guidance_file)
+
+    return removed
+
+
+def _remove_config_file() -> Path | None:
+    """Remove the MemOS config file and empty config directory when requested."""
+    if not CONFIG_FILE.exists():
+        return None
+    CONFIG_FILE.unlink()
+    try:
+        CONFIG_DIR.rmdir()
+    except OSError:
+        pass
+    return CONFIG_FILE
 
 
 
@@ -367,3 +450,68 @@ def init_cmd(
     console.print(f"  Agent guidance: [dim]{', '.join(str(path) for path in guidance_paths)}[/]")
     console.print("  Shell completion: [dim]Skipped (disabled during init)[/]")
     console.print('\n[dim]Try running:[/] memos add "Your first memory"')
+
+
+def uninstall_cmd(
+    agent: str | None = typer.Option(
+        None,
+        "--agent",
+        help=f"Remove MemOS integration for target agent: {', '.join(_valid_agent_names())}.",
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
+    remove_config: bool = typer.Option(
+        False,
+        "--remove-config",
+        help="Also remove ~/.memos/config.yaml.",
+    ),
+):
+    """Uninstall MemOS agent integration without removing the npm package itself."""
+    console.print("[bold blue]◆ MemOS CLI Uninstall[/]\n")
+
+    if not agent:
+        valid = ", ".join(_valid_agent_names())
+        console.print(
+            f"[red]Error:[/] --agent is required. "
+            f"Uninstall target must be specified explicitly ({valid})."
+        )
+        raise typer.Exit(1)
+
+    try:
+        _resolve_skills_dir(agent)
+    except ValueError as exc:
+        console.print(f"\n[red]Error:[/] {exc}")
+        raise typer.Exit(1)
+
+    if not yes:
+        confirmed = typer.confirm(
+            f"Remove MemOS skills and guidance for agent '{agent}'?"
+        )
+        if not confirmed:
+            console.print("[yellow]Uninstall cancelled.[/]")
+            raise typer.Exit()
+
+    removed_skills = _remove_bundled_skills(agent)
+    removed_guidance = _uninstall_agent_guidance(agent)
+    removed_config = _remove_config_file() if remove_config else None
+
+    console.print("\n[green]✓[/] MemOS agent integration removed.")
+    if removed_skills:
+        console.print(f"  Removed skill: [dim]{', '.join(str(path) for path in removed_skills)}[/]")
+    else:
+        console.print("  Removed skill: [dim]Nothing found[/]")
+
+    if removed_guidance:
+        console.print(f"  Cleaned guidance: [dim]{', '.join(str(path) for path in removed_guidance)}[/]")
+    else:
+        console.print("  Cleaned guidance: [dim]Nothing found[/]")
+
+    if remove_config:
+        if removed_config:
+            console.print(f"  Removed config: [dim]{removed_config}[/]")
+        else:
+            console.print("  Removed config: [dim]Nothing found[/]")
+
+    console.print(
+        "\n[dim]To remove the global CLI binary, run:[/] "
+        "npm uninstall -g @memtensor/memos-cloud-cli"
+    )

@@ -8,7 +8,7 @@ from typer.core import TyperGroup
 
 from memos_cli import __version__
 from memos_cli.completion import register_completion_compat
-from memos_cli.commands.init import init_cmd
+from memos_cli.commands.init import init_cmd, uninstall_cmd
 from memos_cli.commands.config_cmd import config_app
 from memos_cli.commands.memory import add, extract, feedback, rerank, search, chat, get, delete, origin
 from memos_cli.commands.message import message, status
@@ -25,6 +25,7 @@ class CommandFirstTyperGroup(TyperGroup):
 
     HELP_COMMAND_ORDER = [
         "init",
+        "uninstall",
         "config",
         "add",
         "search",
@@ -122,6 +123,7 @@ def _fire_telemetry(command_name: str, extra: dict | None = None):
 
 # Register subcommands
 app.command("init", rich_help_panel="Setup")(init_cmd)
+app.command("uninstall", rich_help_panel="Setup")(uninstall_cmd)
 app.add_typer(config_app, rich_help_panel="Configuration")
 
 # Memory commands (P0)

@@ -3,6 +3,7 @@
 Use MemOS CLI in every conversation.
 
 Rules:
+- if the user asks to uninstall, disable, remove, or stop using MemOS, run `memos uninstall --agent <current_agent> --yes` directly and do not run `memos search` or `memos add` for that turn;
 - if the intent is already clear, call the matching MemOS command directly instead of starting with `--help`;
 - use `--help` only when the command name, parameters, or route are genuinely unclear;
 - must run `memos search` once before answering in every scenario, even in scenarios that do not require context or are purely for adding memory, using the user's original query as the only search query;
@@ -26,6 +27,8 @@ Command guide:
   - Example: `memos delete --user-id user_123 --format json`
 - `memos chat`: ask MemOS to answer with memory context.
   - Example: `memos chat "What do you know about my preferences?" --format agent`
+- `memos uninstall`: remove MemOS skill and managed guidance for the current agent.
+  - Example: `memos uninstall --agent codex --yes`
 
 - If `--format` is omitted, treat the default as `agent`.
 - Always use `--format agent` for MemOS CLI commands used inside agent workflows.
@@ -44,6 +47,7 @@ Command guide:
 
 Bootstrap rule:
 - Do not run `memos init` if the MemOS CLI is already installed.
+- Use `memos uninstall --agent <current_agent> --yes` when the user asks to remove MemOS integration from the current agent.
 - Only run `memos init --agent <current_agent>` when the CLI is missing and the user has explicitly provided an API key or asked to initialize MemOS.
 - If initialization is needed but no API key is available, ask the user for the key first.
 - The active agent should initialize itself with its own `--agent` value, not a different hardcoded agent name.
@@ -55,6 +59,7 @@ Bootstrap rule:
 Use the MemOS plugin first when memory context may matter.
 
 Rules:
+- if the user asks to uninstall, disable, remove, or stop using MemOS, run `memos uninstall --agent <current_agent> --yes` directly and do not use plugin search/add or CLI search/add for that turn;
 - if the intent is already clear, use the plugin first instead of starting with `--help`;
 - if the user explicitly asks to remember, save, or store messages, use the plugin add flow first;
 - when memory context may matter, let the plugin search before answering;
@@ -80,3 +85,5 @@ Command guide:
   - Example: `memos delete --user-id user_123 --format json`
 - `memos chat`: ask MemOS to answer with memory context.
   - Example: `memos chat "What do you know about my preferences?" --format agent`
+- `memos uninstall`: remove MemOS skill and managed guidance for the current agent.
+  - Example: `memos uninstall --agent codex --yes`

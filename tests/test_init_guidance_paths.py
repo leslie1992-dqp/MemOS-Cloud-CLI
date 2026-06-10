@@ -128,6 +128,57 @@ class GuidancePathResolutionTests(unittest.TestCase):
         self.assertIn("## MemOS Plugin Mode", content)
         self.assertIn("Plugin guidance", content)
 
+    def test_uninstall_guidance_removes_managed_block_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            supported = {"cursor": root / ".cursor" / "skills"}
+            guidance = root / ".cursor" / "AGENTS.md"
+            guidance.parent.mkdir(parents=True)
+            guidance.write_text(
+                "keep before\n\n"
+                f"{init.GUIDANCE_START}\nmanaged\n{init.GUIDANCE_END}\n\n"
+                "keep after\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(init.SUPPORTED_SKILL_AGENTS, supported, clear=True):
+                removed = init._uninstall_agent_guidance("cursor")
+
+            self.assertEqual(removed, [guidance])
+            self.assertEqual(guidance.read_text(encoding="utf-8"), "keep before\n\nkeep after\n")
+
+    def test_uninstall_guidance_removes_empty_managed_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            supported = {"cursor": root / ".cursor" / "skills"}
+            guidance = root / ".cursor" / "AGENTS.md"
+            guidance.parent.mkdir(parents=True)
+            guidance.write_text(
+                f"{init.GUIDANCE_START}\nmanaged\n{init.GUIDANCE_END}\n",
+                encoding="utf-8",
+            )
+
+            with patch.dict(init.SUPPORTED_SKILL_AGENTS, supported, clear=True):
+                removed = init._uninstall_agent_guidance("cursor")
+
+            self.assertEqual(removed, [guidance])
+            self.assertFalse(guidance.exists())
+
+    def test_remove_bundled_skills_removes_memos_memory_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            supported = {"cursor": root / ".cursor" / "skills"}
+            installed = root / ".cursor" / "skills" / "memos" / "memos-memory"
+            installed.mkdir(parents=True)
+            (installed / "SKILL.md").write_text("skill\n", encoding="utf-8")
+
+            with patch.dict(init.SUPPORTED_SKILL_AGENTS, supported, clear=True):
+                removed = init._remove_bundled_skills("cursor")
+
+            self.assertEqual(removed, [installed])
+            self.assertFalse(installed.exists())
+            self.assertFalse((root / ".cursor" / "skills" / "memos").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

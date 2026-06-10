@@ -74,8 +74,11 @@ pip install -e .
 ## 卸载
 
 ```bash
+memos uninstall --agent codex --yes
 npm uninstall -g @memtensor/memos-cloud-cli
 ```
+
+请先运行 `memos uninstall --agent <agent> --yes`，再卸载 npm 包。该命令会删除已安装的 MemOS skill，并清理 `AGENTS.md` 或 `CLAUDE.md` 等 agent guidance 文件中的 MemOS 托管块；`npm uninstall` 只会移除全局二进制。
 
 
 ## 快速开始
