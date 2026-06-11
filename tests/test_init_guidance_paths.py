@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import typer
 
-from memos_cli.config import MemOSConfig, PlatformConfig
+from memos_cli.config import MemOSConfig, PlatformConfig, load_config
 from memos_cli.commands import init
 
 
@@ -331,6 +331,112 @@ class InitConfigResolutionTests(unittest.TestCase):
             self.assertEqual(saved_configs[0].defaults.user_id, "existing-user")
             self.assertEqual(
                 saved_configs[0].defaults.conversation_id,
+                "existing-conversation",
+            )
+
+    def test_init_preserves_other_config_values_when_api_key_is_null(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            config_file = root / ".memos" / "config.yaml"
+            config_file.parent.mkdir()
+            config_file.write_text(
+                "defaults:\n"
+                "  conversation_id: existing-conversation\n"
+                "  user_id: existing-user\n"
+                "platform:\n"
+                "  api_key: null\n"
+                "  base_url: https://example.test/api\n",
+                encoding="utf-8",
+            )
+
+            saved_configs: list[MemOSConfig] = []
+
+            class Backend:
+                def ping(self) -> None:
+                    return None
+
+            def fake_prompt(prompt: str, **kwargs):
+                if "API key" in prompt:
+                    return "entered-api-key"
+                return ""
+
+            def fake_save_config(config: MemOSConfig) -> None:
+                saved_configs.append(config)
+
+            with patch.object(init, "CONFIG_FILE", config_file):
+                with patch.object(init, "load_config", load_config):
+                    with patch("memos_cli.config.CONFIG_FILE", config_file):
+                        with patch.object(init.sys.stdin, "isatty", return_value=True):
+                            with patch.object(init.Prompt, "ask", side_effect=fake_prompt) as prompt:
+                                with patch.object(init, "get_backend", return_value=Backend()):
+                                    with patch.object(init, "save_config", side_effect=fake_save_config):
+                                        with patch.object(
+                                            init,
+                                            "_install_bundled_skills",
+                                            return_value=root / "skills" / "memos",
+                                        ):
+                                            with patch.object(
+                                                init,
+                                                "_install_agent_guidance",
+                                                return_value=[root / "AGENTS.md"],
+                                            ):
+                                                init.init_cmd(
+                                                    api_key=None,
+                                                    user_id=None,
+                                                    conversation_id=None,
+                                                    memos_plugin=False,
+                                                    agent="cursor",
+                                                )
+
+            self.assertEqual(prompt.call_count, 3)
+            self.assertEqual(saved_configs[0].platform.api_key, "entered-api-key")
+            self.assertEqual(saved_configs[0].platform.base_url, "https://example.test/api")
+            self.assertEqual(saved_configs[0].defaults.user_id, "existing-user")
+            self.assertEqual(
+                saved_configs[0].defaults.conversation_id,
+                "existing-conversation",
+            )
+
+    def test_load_config_preserves_user_and_conversation_when_api_key_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_file = Path(temp_dir) / "config.yaml"
+            config_file.write_text(
+                "defaults:\n"
+                "  conversation_id: existing-conversation\n"
+                "  user_id: existing-user\n"
+                "platform:\n"
+                "  base_url: https://example.test/api\n",
+                encoding="utf-8",
+            )
+
+            with patch("memos_cli.config.CONFIG_FILE", config_file):
+                config = load_config()
+
+            self.assertEqual(config.platform.api_key, "")
+            self.assertEqual(config.defaults.user_id, "existing-user")
+            self.assertEqual(
+                config.defaults.conversation_id,
+                "existing-conversation",
+            )
+
+    def test_load_config_preserves_conversation_when_api_key_and_user_id_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_file = Path(temp_dir) / "config.yaml"
+            config_file.write_text(
+                "defaults:\n"
+                "  conversation_id: existing-conversation\n"
+                "platform:\n"
+                "  base_url: https://example.test/api\n",
+                encoding="utf-8",
+            )
+
+            with patch("memos_cli.config.CONFIG_FILE", config_file):
+                config = load_config()
+
+            self.assertEqual(config.platform.api_key, "")
+            self.assertEqual(config.defaults.user_id, "memos-cli")
+            self.assertEqual(
+                config.defaults.conversation_id,
                 "existing-conversation",
             )
 
