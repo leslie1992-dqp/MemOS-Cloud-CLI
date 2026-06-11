@@ -376,17 +376,30 @@ def _prompt_existing_config_values(
     conversation_id: str | None,
 ) -> tuple[str, str, str]:
     """Prompt for config values, using existing values when the user presses Enter."""
-    console.print("[dim]Press ENTER to keep existing values, or enter new values to overwrite them.[/]\n")
+    console.print(
+        "[dim]Press ENTER to keep existing values when shown, "
+        "or to use defaults for optional values.[/]\n"
+    )
 
     if not api_key:
-        masked_key = _masked_api_key(config.platform.api_key)
-        entered_api_key = Prompt.ask(
-            f"[bold]Enter your MemOS API key[/] [dim](current: {masked_key})[/]",
-            password=True,
-            default="",
-            show_default=False,
-        )
-        api_key = entered_api_key or config.platform.api_key
+        if _has_config_value(config.platform.api_key):
+            masked_key = _masked_api_key(config.platform.api_key)
+            entered_api_key = Prompt.ask(
+                f"[bold]Enter your MemOS API key[/] [dim](current: {masked_key})[/]",
+                password=True,
+                default="",
+                show_default=False,
+            )
+            api_key = entered_api_key or config.platform.api_key
+        else:
+            console.print(
+                "[dim]Get your API key at:[/] "
+                "https://memos-dashboard.openmem.net/cn/apikeys/\n"
+            )
+            api_key = Prompt.ask(
+                "[bold]Enter your MemOS API key[/]",
+                password=True,
+            )
 
     if not user_id:
         user_id = Prompt.ask(
@@ -446,46 +459,48 @@ def init_cmd(
     has_complete_existing_config = (
         config_file_exists and _has_complete_init_config(existing_config)
     )
+    is_interactive = sys.stdin.isatty()
 
-    if has_complete_existing_config:
+    if config_file_exists:
         console.print(f"[yellow]Existing configuration found at:[/] [dim]{CONFIG_FILE}[/]")
-        if sys.stdin.isatty():
-            api_key, user_id, conversation_id = _prompt_existing_config_values(
-                existing_config,
-                api_key,
-                user_id,
-                conversation_id,
-            )
-        else:
-            api_key = api_key or existing_config.platform.api_key
-            user_id = user_id or existing_config.defaults.user_id or DEFAULT_USER_ID
-            conversation_id = (
-                conversation_id
-                or existing_config.defaults.conversation_id
-                or DEFAULT_CONVERSATION_ID
-            )
-    else:
-        if not api_key:
-            console.print(
-                "[red]Error:[/] API key is required. "
-                "Pass --api-key, or configure it with "
-                "`memos config set platform.api_key <value>` before running init."
-            )
-            if config_file_exists:
-                console.print(f"[dim]Existing config: {CONFIG_FILE}[/]")
-            else:
-                console.print(
-                    "[dim]Get your API key at:[/] "
-                    "https://memos-dashboard.openmem.net/cn/apikeys/"
-                )
-            raise typer.Exit(1)
 
+    if is_interactive:
+        api_key, user_id, conversation_id = _prompt_existing_config_values(
+            existing_config,
+            api_key,
+            user_id,
+            conversation_id,
+        )
+    elif has_complete_existing_config:
+        api_key = api_key or existing_config.platform.api_key
         user_id = user_id or existing_config.defaults.user_id or DEFAULT_USER_ID
         conversation_id = (
             conversation_id
             or existing_config.defaults.conversation_id
             or DEFAULT_CONVERSATION_ID
         )
+    else:
+        user_id = user_id or existing_config.defaults.user_id or DEFAULT_USER_ID
+        conversation_id = (
+            conversation_id
+            or existing_config.defaults.conversation_id
+            or DEFAULT_CONVERSATION_ID
+        )
+
+    if not api_key:
+        console.print(
+            "[red]Error:[/] API key is required. "
+            "Pass --api-key, or configure it with "
+            "`memos config set platform.api_key <value>` before running init."
+        )
+        if config_file_exists:
+            console.print(f"[dim]Existing config: {CONFIG_FILE}[/]")
+        else:
+            console.print(
+                "[dim]Get your API key at:[/] "
+                "https://memos-dashboard.openmem.net/cn/apikeys/"
+            )
+        raise typer.Exit(1)
     
     # Create and save config
     config = MemOSConfig(

@@ -275,6 +275,65 @@ class InitConfigResolutionTests(unittest.TestCase):
             self.assertEqual(raised.exception.exit_code, 1)
             prompt.assert_not_called()
 
+    def test_init_prompts_for_missing_api_key_in_interactive_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_file = Path(temp_dir) / "config.yaml"
+            config_file.write_text("existing\n", encoding="utf-8")
+            existing_config = MemOSConfig(
+                platform=PlatformConfig(
+                    api_key="",
+                    base_url="https://example.test/api",
+                )
+            )
+            existing_config.defaults.user_id = "existing-user"
+            existing_config.defaults.conversation_id = "existing-conversation"
+
+            saved_configs: list[MemOSConfig] = []
+
+            class Backend:
+                def ping(self) -> None:
+                    return None
+
+            def fake_prompt(prompt: str, **kwargs):
+                if "API key" in prompt:
+                    return "entered-api-key"
+                return kwargs.get("default", "")
+
+            def fake_save_config(config: MemOSConfig) -> None:
+                saved_configs.append(config)
+
+            with patch.object(init, "CONFIG_FILE", config_file):
+                with patch.object(init, "load_config", return_value=existing_config):
+                    with patch.object(init.sys.stdin, "isatty", return_value=True):
+                        with patch.object(init.Prompt, "ask", side_effect=fake_prompt) as prompt:
+                            with patch.object(init, "get_backend", return_value=Backend()):
+                                with patch.object(init, "save_config", side_effect=fake_save_config):
+                                    with patch.object(
+                                        init,
+                                        "_install_bundled_skills",
+                                        return_value=Path(temp_dir) / "skills" / "memos",
+                                    ):
+                                        with patch.object(
+                                            init,
+                                            "_install_agent_guidance",
+                                            return_value=[Path(temp_dir) / "AGENTS.md"],
+                                        ):
+                                            init.init_cmd(
+                                                api_key=None,
+                                                user_id=None,
+                                                conversation_id=None,
+                                                memos_plugin=False,
+                                                agent="cursor",
+                                            )
+
+            self.assertEqual(prompt.call_count, 3)
+            self.assertEqual(saved_configs[0].platform.api_key, "entered-api-key")
+            self.assertEqual(saved_configs[0].defaults.user_id, "existing-user")
+            self.assertEqual(
+                saved_configs[0].defaults.conversation_id,
+                "existing-conversation",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
